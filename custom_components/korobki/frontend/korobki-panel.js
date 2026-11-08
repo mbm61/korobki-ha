@@ -4,7 +4,7 @@
  * Оформление: карточки с градиентом из акцентного цвета места, цвета берутся из темы HA. */
 (function () {
   'use strict';
-  var VERSION = '0.2.0';
+  var VERSION = '0.3.0';
 
   /* ---------- QR-код (байтовый режим, уровень M, версии 1-6) ---------- */
   var QR = (function () {
@@ -237,6 +237,8 @@
     '.viewer img { width: 100%; max-height: 62vh; object-fit: contain; border-radius: 12px; background: color-mix(in srgb, var(--fg) 6%, transparent); }',
     '.vnav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }',
     '.toast { position: fixed; left: 50%; transform: translateX(-50%); z-index: 30; max-width: min(92vw, 420px); bottom: calc(24px + env(safe-area-inset-bottom, 0px)); padding: 10px 16px; border-radius: 12px; background: var(--fg); color: var(--bg); font-size: 14px; text-align: center; }',
+    '.pill { flex: none; height: 36px; padding: 0 14px 0 12px; border-radius: 18px; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); background: color-mix(in srgb, var(--accent) 14%, var(--card)); }',
+    '.pill.on { background: color-mix(in srgb, var(--accent) 34%, var(--card)); }',
     '.h1row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }',
     '.h1row h1 { margin: 0; min-width: 0; }',
     '.pen { width: 34px; height: 34px; flex: none; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--muted); display: grid; place-items: center; }',
@@ -262,7 +264,7 @@
     '<button class="menu" id="menu" hidden aria-label="Меню"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>' +
     '<button class="menu" id="back" hidden aria-label="Назад"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>' +
     '<nav class="crumbs" id="crumbs" aria-label="Путь"></nav>' +
-    '<button class="menu" id="catsBtn" aria-label="Категории"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M9 4 7 20M17 4l-2 16M4 9h16M3.5 15h16"/></svg></button></div>' +
+    '<button class="pill" id="catsBtn" aria-label="Категории"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M9 4 7 20M17 4l-2 16M4 9h16M3.5 15h16"/></svg><span>Категории</span></button></div>' +
     '<label class="search"><span class="sr">Поиск</span>' +
     '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>' +
     '<input id="q" type="search" placeholder="Найти вещь, коробку или место" autocomplete="off"></label></header>' +
@@ -295,14 +297,14 @@
     var root = emptyRoot(), rev = 0, settings = normSettings({});
     var loaded = false, dirty = false, inflight = false, saveTimer = null, statusText = '', unsub = null, destroyed = false;
     var narrow = false, pendingRoute = null, lastRoutePath = null;
-    var S = { mode: null, catId: null, stale: false, path: [], q: '', adding: false, addType: null, draft: '', edit: false, conf: null, focus: false, sheet: null, pick: null, error: '' };
+    var S = { mode: null, catId: null, stale: false, path: [], q: '', adding: false, addType: null, draft: '', edit: false, conf: null, focus: false, addTags: [], draftCat: '', sheet: null, pick: null, error: '' };
 
     function normSettings(x) {
       var o = Object.assign({ qr: 'app', base: '', cats: [] }, x || {});
       if (!Array.isArray(o.cats)) o.cats = [];
       return o;
     }
-    var ALLOW = { home: ['place'], place: ['box'], box: ['box', 'item'] };
+    var ALLOW = { home: ['place'], place: ['box', 'item'], box: ['item', 'box'] };
     var TLABEL = { place: 'Место', box: 'Коробка', item: 'Вещь' };
     var KIND = { place: 'Место', box: 'Коробка', item: 'Вещь', home: 'Дом' };
     var HINT = { place: 'Например, Гараж', box: 'Например, Зимняя одежда', item: 'Например, Шуруповёрт' };
@@ -612,7 +614,7 @@
       var items = cur.ch.filter(function (c) { return c.t === 'item'; });
       var allowed = ALLOW[cur.t];
       var type = S.addType && allowed.indexOf(S.addType) > -1 ? S.addType : allowed[0];
-      var addLabel = cur.t === 'home' ? 'Добавить место' : cur.t === 'place' ? 'Добавить коробку' : 'Добавить в коробку';
+      var addLabel = cur.t === 'home' ? 'Добавить место' : cur.t === 'place' ? 'Добавить в место' : 'Добавить в коробку';
 
       var h = '<div class="head"><div class="h1row"><h1>' + esc(cur.n) + '</h1><button class="pen" data-edit="' + cur.id + '" aria-label="Изменить название">' + svg('pen', 18) + '</button></div><div class="stat">' + summary(cur) + '</div></div>';
       if (cur.t !== 'home') h += '<div class="strip" style="--a:' + acc + '">' + thumbsHtml(cur, true) + '</div>';
@@ -632,6 +634,7 @@
         }
         h += '<input id="fName" type="text" autocomplete="off" placeholder="' + HINT[type] + '" value="' + esc(S.draft) + '" aria-label="Название">';
         if (type === 'item') h += '<label class="qrow" for="fQty">Количество <input id="fQty" type="number" min="1" value="1" inputmode="numeric"></label>';
+        if (type === 'item') h += addCatsHtml();
         h += '<div class="actions"><button class="btn primary" type="submit">Добавить</button><button class="btn" type="button" data-toggle-add>Отмена</button></div></form>';
       }
 
@@ -703,6 +706,16 @@
       return h + '<div class="list">' + hits.map(hitCard).join('') + '</div>';
     }
 
+    function addCatsHtml() {
+      var sel = S.addTags, h = '<div class="sec">Категории</div>';
+      if (settings.cats.length) {
+        h += '<div class="chips">' + settings.cats.map(function (c) {
+          var on = sel.indexOf(c.id) > -1;
+          return '<button type="button" class="chip' + (on ? ' on' : '') + '" style="--c:' + c.c + '" data-addtag="' + c.id + '" aria-pressed="' + on + '">#' + esc(c.n) + '</button>';
+        }).join('') + '</div>';
+      }
+      return h + '<input id="fNewCat" type="text" autocomplete="off" placeholder="' + (settings.cats.length ? 'Или новая категория' : 'Новая категория (необязательно)') + '" value="' + esc(S.draftCat) + '" aria-label="Новая категория">';
+    }
     function catsBlock(n) {
       var on = n.tg || [];
       return '<div class="sec">Категории</div><div class="chips">' + settings.cats.map(function (c) {
@@ -783,6 +796,7 @@
       if (!loaded) { $('view').innerHTML = '<div class="head"><h1>Коробки</h1><div class="stat">Загружаю…</div></div>'; return; }
       var T = trail(), searching = S.q.trim() !== '';
       $('back').hidden = !(S.path.length || S.mode || searching);
+      $('catsBtn').classList.toggle('on', !!S.mode);
       if (S.mode && !searching) {
         var cc = S.mode === 'cat' ? catById(S.catId) : null;
         $('crumbs').innerHTML = cc
@@ -794,6 +808,7 @@
           return last ? '<span class="cur">' + esc(n.n) + '</span>' : '<button class="crumb" data-crumb="' + i + '">' + esc(n.n) + '</button><span class="chev">' + svg('chev', 14) + '</span>';
         }).join('');
       }
+      var crEl = $('crumbs'); crEl.scrollLeft = crEl.scrollWidth;
       var banner = S.stale ? '<div class="banner"><span>Вышла новая версия панели.</span><button class="btn primary" data-reload style="--a:var(--accent);height:34px">Обновить</button></div>' : '';
       $('view').innerHTML = banner + (searching ? searchView() : S.mode === 'cats' ? catsView() : S.mode === 'cat' ? catView() : normalView(T));
       renderFoot();
@@ -862,6 +877,12 @@
       if (q('#back')) { goBack(); return; }
       if (q('#catsBtn')) { S.mode = 'cats'; S.catId = null; S.edit = false; S.adding = false; S.conf = null; clearSearch(); render(); toTop(); return; }
       if (q('[data-reload]')) { location.reload(); return; }
+      if ((el = q('[data-addtag]'))) {
+        var at = el.getAttribute('data-addtag'), ai = S.addTags.indexOf(at);
+        if (ai > -1) S.addTags.splice(ai, 1); else S.addTags.push(at);
+        el.classList.toggle('on', ai < 0); el.setAttribute('aria-pressed', String(ai < 0));
+        return;
+      }
       if ((el = q('[data-tag]'))) {
         var tn = S.sheet && findNode(root, S.sheet.id), tid = el.getAttribute('data-tag');
         if (tn) {
@@ -926,11 +947,11 @@
       } else if ((el = q('[data-crumb]'))) {
         S.mode = null; S.path = S.path.slice(0, Number(el.getAttribute('data-crumb'))); S.adding = false; S.edit = false; clearSearch(); render(); toTop();
       } else if (q('[data-toggle-add]')) {
-        S.adding = !S.adding; S.draft = ''; S.addType = null; S.focus = S.adding; render();
+        S.adding = !S.adding; S.draft = ''; S.draftCat = ''; S.addTags = []; S.addType = null; S.focus = S.adding; render();
       } else if (q('[data-toggle-edit]')) {
         S.edit = !S.edit; render();
       } else if ((el = q('[data-type]'))) {
-        var f = $('fName'); S.draft = f ? f.value : ''; S.addType = el.getAttribute('data-type'); S.focus = true; render();
+        var f = $('fName'), fc = $('fNewCat'); S.draft = f ? f.value : ''; S.draftCat = fc ? fc.value : ''; S.addType = el.getAttribute('data-type'); S.focus = true; render();
       } else if (hadConf) {
         render();
       }
@@ -988,8 +1009,14 @@
         var pal = ['#ffc107', '#03a9f4', '#9c27b0', '#f44336', '#4caf50', '#00bcd4', '#ff7043'];
         node.c = pal[cur.ch.length % pal.length];
       }
+      if (type === 'item') {
+        var tags = S.addTags.filter(function (t) { return catById(t); });
+        var fresh = addCat(($('fNewCat') || {}).value);
+        if (fresh && tags.indexOf(fresh.id) < 0) tags.push(fresh.id);
+        node.tg = tags;
+      }
       cur.ch.push(node);
-      S.adding = false; S.draft = ''; S.addType = null;
+      S.adding = false; S.draft = ''; S.draftCat = ''; S.addTags = []; S.addType = null;
       save(); render();
     });
 
