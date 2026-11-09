@@ -4,7 +4,7 @@
  * Оформление: карточки с градиентом из акцентного цвета места, цвета берутся из темы HA. */
 (function () {
   'use strict';
-  var VERSION = '0.5.0';
+  var VERSION = '0.5.1';
 
   /* ---------- QR-код (байтовый режим, уровень M, версии 1-6) ---------- */
   var QR = (function () {
@@ -158,9 +158,11 @@
     '.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }',
     '.wrap { max-width: 560px; margin: 0 auto; padding: 8px 16px 0; }',
     '.top { position: sticky; top: 0; z-index: 5; background: var(--bg); padding-block: 8px 6px; }',
-    '.toprow { display: flex; align-items: center; gap: 4px; }',
+    '.toprow { display: flex; align-items: center; gap: 4px; min-height: 34px; }',
+    '.top .srow { gap: 8px; }',
+    '.top .menu { height: 34px; }',
     '.menu { width: 40px; height: 40px; flex: none; border: 0; background: none; border-radius: 12px; display: grid; place-items: center; }',
-    '.crumbs { flex: 1; min-width: 0; display: flex; align-items: center; gap: 2px; overflow-x: auto; scrollbar-width: none; white-space: nowrap; padding-bottom: 8px; padding-top: 8px; color: var(--muted); }',
+    '.crumbs { flex: 1; min-width: 0; display: flex; align-items: center; gap: 2px; overflow-x: auto; scrollbar-width: none; white-space: nowrap; padding-bottom: 2px; padding-top: 2px; color: var(--muted); }',
     '.crumbs::-webkit-scrollbar { display: none; }',
     '.crumb { background: none; border: 0; padding: 6px 8px; border-radius: 8px; color: var(--muted); font-size: 13px; font-weight: 500; }',
     '.cur { padding: 6px 8px; font-size: 13px; font-weight: 600; color: var(--fg); }',
@@ -255,7 +257,7 @@
     '.inline .field { flex: 1; min-width: 0; }',
     '.banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; margin-top: 8px; border-radius: 12px; font-size: 14px; border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); background: color-mix(in srgb, var(--accent) 14%, var(--card)); }',
     '.card .field { height: 38px; }',
-    '.syncbar { --st: #42a5f5; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; padding: 8px 12px; border-radius: 12px; font-size: 13px; border: 1px solid color-mix(in srgb, var(--st) 50%, transparent); background: color-mix(in srgb, var(--st) 14%, var(--card)); }',
+    '.syncbar { --st: #42a5f5; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 6px; padding: 6px 10px; border-radius: 12px; font-size: 13px; border: 1px solid color-mix(in srgb, var(--st) 50%, transparent); background: color-mix(in srgb, var(--st) 14%, var(--card)); }',
     '.syncbar[hidden] { display: none; }',
     '.mini2 { flex: none; height: 30px; padding: 0 12px; border-radius: 10px; font-size: 13px; font-weight: 600; border: 1px solid var(--line); background: var(--card); }',
     '.foot button { background: none; border: 0; padding: 6px 0; font-size: 12px; color: var(--muted); text-decoration: underline; }',
@@ -267,9 +269,41 @@
     '.srow .search { flex: 1; min-width: 0; }',
     '.iconbtn { width: 44px; height: 44px; flex: none; border-radius: 12px; border: 1px solid var(--line); background: var(--card); display: grid; place-items: center; color: var(--muted); }',
     '.iconbtn.on { color: var(--fg); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 20%, var(--card)); }',
-    '.bnav { position: sticky; bottom: 0; z-index: 4; display: flex; gap: 10px; padding: 10px 0 calc(10px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, var(--bg) 78%, transparent); }',
-    '.bnav button { flex: 1; height: 46px; border-radius: 14px; font-size: 15px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 12%, var(--card)) 0%, var(--card) 65%); }',
+    '.bnav { position: sticky; bottom: 0; z-index: 4; display: flex; gap: 10px; padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, var(--bg) 78%, transparent); }',
+    '.bnav button { flex: 1; height: 42px; border-radius: 14px; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 12%, var(--card)) 0%, var(--card) 65%); }',
     '.bnav button:active { transform: scale(.98); }',
+    '@media (min-width: 900px) { .bnav { display: none; } }',
+    /* плотные строки вещей (вариант Б) */
+    '.row { min-height: 50px; padding: 6px 12px 6px 10px; }',
+    '.rthumb { width: 36px; height: 36px; border-radius: 50%; }',
+    '.ini { font-weight: 700; font-size: 15px; background-color: color-mix(in srgb, var(--a) 24%, transparent); }',
+    '.tile.ini { border-radius: 50%; font-size: 20px; }',
+    '.row .rname { font-weight: 600; }',
+    /* сетка мест и коробок (вариант В) */
+    '.gridc { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }',
+    '.g { position: relative; min-width: 0; cursor: pointer; border-radius: 16px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--a) 35%, transparent); background: linear-gradient(160deg, color-mix(in srgb, var(--a) 10%, var(--card)) 0%, var(--card) 65%); transition: transform .15s ease; }',
+    '.g:active { transform: scale(.98); }',
+    '.cover { height: 104px; position: relative; display: grid; place-items: center; color: var(--a); background-color: color-mix(in srgb, var(--a) 18%, var(--card)); background-size: cover; background-position: center; }',
+    '.cover svg { width: 40px; height: 40px; }',
+    '.badge { position: absolute; right: 8px; top: 8px; min-width: 24px; padding: 1px 8px; border-radius: 12px; background: rgba(0, 0, 0, .55); color: #fff; font-size: 12px; font-weight: 600; text-align: center; }',
+    '.g .del { position: absolute; right: 8px; top: 8px; background: var(--card); }',
+    '.gb { padding: 9px 11px 11px; }',
+    '.gb .name { font-size: 15px; }',
+    /* вложенные коробки: компактно, с цветной полосой */
+    '.card.cs { gap: 10px; padding: 8px 12px; border-radius: 12px; border-left: 4px solid var(--a); }',
+    '.card.cs .tile { width: 34px; height: 34px; border-radius: 10px; }',
+    '.card.cs .tile svg { width: 20px; height: 20px; }',
+    '.card.cs .name { font-size: 15px; }',
+    /* пустые экраны */
+    '.empty { border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent); background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 8%, var(--card)) 0%, var(--card) 65%); }',
+    '.eico { width: 64px; height: 64px; border-radius: 20px; display: grid; place-items: center; color: var(--a, var(--accent)); background: color-mix(in srgb, var(--a, var(--accent)) 18%, transparent); }',
+    '.eico svg { width: 34px; height: 34px; }',
+    /* выбор цвета */
+    '.swatches { display: flex; flex-wrap: wrap; gap: 8px; }',
+    '.sw { width: 34px; height: 34px; border-radius: 50%; border: 2px solid transparent; background: var(--c); padding: 0; }',
+    '.sw.on { border-color: var(--fg); box-shadow: 0 0 0 2px var(--card) inset; }',
+    '.sw.auto { background: var(--card); border: 1px dashed var(--muted); font-size: 11px; color: var(--muted); width: auto; padding: 0 12px; border-radius: 17px; }',
+    '.sw.auto.on { border-style: solid; border-color: var(--fg); }',
     '.fgroup { display: grid; gap: 8px; padding: 14px; margin-bottom: 12px; }',
     '.sel { height: 38px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); padding: 0 10px; font-size: 14px; }',
     '.ta.bulk { min-height: 120px; }',
@@ -286,15 +320,16 @@
 
   var HTML = '<style>' + STYLE + '</style>' +
     '<div class="wrap">' +
-    '<header class="top"><div class="toprow">' +
+    '<header class="top"><div class="srow">' +
     '<button class="menu" id="menu" hidden aria-label="Меню"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>' +
-    '<button class="menu" id="back" hidden aria-label="Назад"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>' +
-    '<nav class="crumbs" id="crumbs" aria-label="Путь"></nav>' +
-    '<button class="pill" id="catsBtn" aria-label="Категории"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M9 4 7 20M17 4l-2 16M4 9h16M3.5 15h16"/></svg><span>Категории</span></button></div>' +
-    '<div class="srow"><label class="search"><span class="sr">Поиск</span>' +
+    '<label class="search"><span class="sr">Поиск</span>' +
     '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>' +
-    '<input id="q" type="search" placeholder="Найти вещь, коробку или место" autocomplete="off"></label>' +
-    '<button class="iconbtn" id="filtBtn" aria-label="Фильтры" title="Фильтры"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16l-6 7.5V19l-4-2v-4.5Z"/></svg></button></div></header><div class="syncbar" id="syncbar" hidden></div>' +
+    '<input id="q" type="search" placeholder="Поиск вещей" autocomplete="off"></label>' +
+    '<button class="iconbtn" id="filtBtn" aria-label="Фильтры" title="Фильтры"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16l-6 7.5V19l-4-2v-4.5Z"/></svg></button>' +
+    '<button class="iconbtn" id="catsBtn" aria-label="Категории" title="Категории"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M9 4 7 20M17 4l-2 16M4 9h16M3.5 15h16"/></svg></button></div>' +
+    '<div class="toprow"><button class="menu" id="back" hidden aria-label="Назад"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>' +
+    '<nav class="crumbs" id="crumbs" aria-label="Путь"></nav></div>' +
+    '<div class="syncbar" id="syncbar" hidden></div></header>' +
     '<main id="view"></main><footer class="foot" id="foot"></footer>' +
     '<nav class="bnav" id="bnav" hidden aria-label="Навигация"><button data-home aria-label="В корень дома"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7M6 10v10h12V10"/></svg>Домой</button>' +
     '<button data-goback aria-label="Назад"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Назад</button></nav></div>' +
@@ -427,6 +462,7 @@
     }
 
     /* --- категории и поиск --- */
+    var PAL = ['#ffc107', '#03a9f4', '#2196f3', '#9c27b0', '#f44336', '#4caf50', '#00bcd4', '#ff7043', '#8d6e63'];
     var CATPAL = ['#ff7043', '#26a69a', '#7e57c2', '#ffa726', '#42a5f5', '#ec407a', '#66bb6a', '#8d6e63'];
     function catById(id) { return settings.cats.filter(function (c) { return c.id === id; })[0] || null; }
     function addCat(name) {
@@ -1069,7 +1105,22 @@
     /* --- отрисовка --- */
     function tileHtml(n) {
       var p = firstPhoto(n);
-      return p ? '<div class="tile ph" style="background-image:url(' + p + ')"></div>' : '<div class="tile">' + svg(n.t) + '</div>';
+      if (p) return '<div class="tile ph" style="background-image:url(' + p + ')"></div>';
+      return n.t === 'item' ? '<div class="tile ini">' + esc(initial(n.n)) + '</div>' : '<div class="tile">' + svg(n.t) + '</div>';
+    }
+    function initial(name) { var m = /[A-Za-zА-Яа-яЁё0-9]/.exec(name || ''); return m ? m[0].toUpperCase() : '•'; }
+    function gridHtml(n, acc) {
+      var a = n.c || acc, p = firstPhoto(n), st = stats(n);
+      return '<div class="g" style="--a:' + a + '" data-open="' + n.id + '" tabindex="0" role="button" aria-label="Открыть: ' + esc(n.n) + '">' +
+        '<div class="cover" style="' + (p ? 'background-image:url(' + p + ')' : '') + '">' + (p ? '' : svg(n.t)) +
+        (S.edit ? delHtml(n.id) : '<span class="badge" title="Вещей внутри">' + st.i + '</span>') + '</div>' +
+        '<div class="gb"><div class="name">' + esc(n.n) + '</div><div class="sub">' + summary(n) + '</div></div></div>';
+    }
+    function compactHtml(n, acc) {
+      var a = n.c || acc;
+      return '<div class="card cs" style="--a:' + a + '" data-open="' + n.id + '" tabindex="0" role="button" aria-label="Открыть: ' + esc(n.n) + '">' +
+        tileHtml(n) + '<div class="t"><div class="name">' + esc(n.n) + '</div><div class="sub">' + summary(n) + '</div></div>' +
+        (S.edit ? delHtml(n.id) : '<span class="chev">' + svg('chev', 18) + '</span>') + '</div>';
     }
     function delHtml(id) {
       var ask = S.conf === id;
@@ -1129,13 +1180,16 @@
         h += '<div class="actions"><button class="btn primary" type="submit">Добавить</button><button class="btn" type="button" data-toggle-add>Отмена</button></div></form>';
       }
 
-      if (conts.length) h += '<div class="list">' + conts.map(function (c) { return cardHtml(c, acc); }).join('') + '</div>';
+      if (conts.length) {
+        if (cur.t === 'box') h += '<div class="list" style="gap:6px">' + conts.map(function (c) { return compactHtml(c, acc); }).join('') + '</div>';
+        else h += '<div class="gridc">' + conts.map(function (c) { return gridHtml(c, acc); }).join('') + '</div>';
+      }
 
       if (items.length) {
         h += '<div class="label">Вещи</div><div class="items" style="--a:' + acc + '">' + items.map(function (it) {
           var p = firstPhoto(it);
           return '<div class="row"><div class="rmain" data-sheet="' + it.id + '" tabindex="0" role="button" aria-label="Открыть: ' + esc(it.n) + '">' +
-            (p ? '<div class="rthumb" style="background-image:url(' + p + ')"></div>' : '<div class="rthumb">' + svg('cam') + '</div>') +
+            (p ? '<div class="rthumb" style="background-image:url(' + p + ')"></div>' : '<div class="rthumb ini">' + esc(initial(it.n)) + '</div>') +
             '<div class="rtext"><div class="rname">' + esc(it.n) + '</div>' + metaHtml(it) + '</div></div>' +
             '<div class="step"><button data-step="' + it.id + '" data-d="-1" aria-label="Меньше">−</button><span class="qty">' + it.q + '</span><button data-step="' + it.id + '" data-d="1" aria-label="Больше">+</button></div>' +
             (S.edit ? delHtml(it.id) : '') + '</div>';
@@ -1144,8 +1198,8 @@
 
       if (!cur.ch.length && !S.adding) {
         if (cur.t === 'home') {
-          h += '<div class="empty"><div>Пока нет ни одного места. Начните с кладовки, балкона или антресоли.</div><button class="btn" data-seed>Заполнить примером</button></div>';
-        } else h += '<div class="empty">Здесь пока пусто. Добавьте коробку или вещь.</div>';
+          h += '<div class="empty" style="--a:' + acc + '"><div class="eico">' + svg('place') + '</div><div>Пока нет ни одного места. Начните с кладовки, балкона или антресоли.</div><button class="btn primary" data-toggle-add>' + svg('plus', 18) + 'Добавить место</button><button class="btn" data-seed>Заполнить примером</button></div>';
+        } else h += '<div class="empty" style="--a:' + acc + '"><div class="eico">' + svg(cur.t === 'place' ? 'box' : 'item') + '</div><div>Здесь пока пусто.</div><button class="btn primary" data-toggle-add>' + svg('plus', 18) + addLabel + '</button></div>';
       }
       return h;
     }
@@ -1250,6 +1304,9 @@
         h += head(KIND[n.t]) +
           '<input class="field big" id="sName" data-rename="' + n.id + '" value="' + esc(n.n) + '" aria-label="Название">' +
           '<div class="hint">' + (n.t === 'home' ? 'Название дома или квартиры. Показывается вверху и в пути.' : esc(namesTo(n.id).join(' › '))) + '</div>' +
+          (n.t === 'home' ? '' : '<div class="sec">Цвет</div><div class="swatches">' +
+            (n.t === 'box' ? '<button type="button" class="sw auto' + (!n.c ? ' on' : '') + '" data-setcolor="" data-for="' + n.id + '">Как у места</button>' : '') +
+            PAL.map(function (c) { return '<button type="button" class="sw' + (n.c === c ? ' on' : '') + '" style="--c:' + c + '" data-setcolor="' + c + '" data-for="' + n.id + '" aria-label="Цвет ' + c + '"></button>'; }).join('') + '</div>') +
           (n.t === 'home' ? '' : '<div class="actions"><button class="btn" data-qr="' + n.id + '">' + svg('qr', 18) + 'QR-этикетка</button>' +
             '<button class="btn" data-move="' + n.id + '">Переместить</button><button class="btn" data-dup="' + n.id + '">Копировать</button>' +
             '<button class="btn danger' + (S.conf === n.id ? ' ask' : '') + '" data-del="' + n.id + '">' + (S.conf === n.id ? 'Точно удалить?' : 'Удалить') + '</button></div>');
@@ -1305,6 +1362,8 @@
       } else if (n) {
         if (days >= 2) st = '#e53935';
         html = '<span>Ожидает отправки: ' + n + (days >= 2 ? '. Не уходит уже ' + days + ' дн.' : '') + '</span><button class="mini2" data-sync>Отправить</button>';
+      } else if (S.stale) {
+        html = '<span>Вышла новая версия панели.</span><button class="mini2" data-reload>Обновить</button>';
       }
       b.hidden = !html; b.style.setProperty('--st', st); b.innerHTML = html;
     }
@@ -1338,8 +1397,7 @@
         }).join('');
       }
       var crEl = $('crumbs'); crEl.scrollLeft = crEl.scrollWidth;
-      var banner = S.stale ? '<div class="banner"><span>Вышла новая версия панели.</span><button class="btn primary" data-reload style="--a:var(--accent);height:34px">Обновить</button></div>' : '';
-      $('view').innerHTML = banner + ((searching || finding) ? findView() : S.mode === 'cats' ? catsView() : S.mode === 'cat' ? catView() : S.mode === 'trash' ? trashView() : normalView(T));
+      $('view').innerHTML = ((searching || finding) ? findView() : S.mode === 'cats' ? catsView() : S.mode === 'cat' ? catView() : S.mode === 'trash' ? trashView() : normalView(T));
       renderFoot(); renderSync();
       var sh = $('sheet'), html = sheetHtml();
       sh.innerHTML = html; sh.hidden = !html;
@@ -1349,7 +1407,7 @@
     var toastT = null;
     function toast(msg) {
       var t = $('toast'); t.textContent = msg; t.hidden = false;
-      clearTimeout(toastT); toastT = setTimeout(function () { t.hidden = true; }, 3600);
+      clearTimeout(toastT); toastT = setTimeout(function () { t.hidden = true; }, 2600);
     }
     function toTop() { host.scrollTop = 0; try { window.scrollTo(0, 0); } catch (e) {} }
     function clearSearch() { S.q = ''; $('q').value = ''; }
@@ -1427,6 +1485,11 @@
       if (q('[data-freset]')) { S.f = { cats: [], nocat: false, nophoto: false, sort: 'path' }; render(); return; }
       if ((el = q('[data-bulk]'))) { var bf = $('fName') || $('fBulk'), bc = $('fNewCat'); S.draft = bf ? bf.value : ''; S.draftCat = bc ? bc.value : ''; S.bulk = el.checked; S.focus = true; render(); return; }
       if ((el = q('[data-keep]'))) { S.keep = el.checked; return; }
+      if ((el = q('[data-setcolor]'))) {
+        var cn = findNode(root, el.getAttribute('data-for')), cv = el.getAttribute('data-setcolor');
+        if (cn) { if (cv) cn.c = cv; else delete cn.c; save(); render(); }
+        return;
+      }
       if (q('[data-sync]')) { sync(); return; }
       if (q('[data-reauth]') && env.reauth) { env.reauth(); return; }
       if (q('[data-logout]') && env.logout) { env.logout(); return; }
