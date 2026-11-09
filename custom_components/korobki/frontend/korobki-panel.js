@@ -4,7 +4,8 @@
  * Оформление: карточки с градиентом из акцентного цвета места, цвета берутся из темы HA. */
 (function () {
   'use strict';
-  var VERSION = '0.5.1';
+  /* версию подставляет сервер при отдаче файла (из manifest.json), вручную её менять не нужно */
+  var VERSION = '__KOROBKI_VERSION__';
 
   /* ---------- QR-код (байтовый режим, уровень M, версии 1-6) ---------- */
   var QR = (function () {
@@ -636,7 +637,7 @@
       return call('POST', '/api/korobki/sync', { since: since, records: list, device: device }).then(function (r) { return r.json(); }).then(function (j) {
         var changed = applyRemote(j.records || []);
         since = j.rev; everSynced = true;
-        S.stale = !!(j.version && j.version !== VERSION);
+        S.stale = !!(j.version && VERSION.indexOf('__') !== 0 && j.version !== VERSION);
         if (changed) { buildTree(); render(); }
         doPersist();
       });
@@ -1343,7 +1344,7 @@
     function renderFoot() {
       var f = $('foot'); if (!f) return;
       var t = lastSync ? 'Синхронизировано в ' + new Date(lastSync).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-      f.innerHTML = '<span>Данные хранятся в Home Assistant · v' + VERSION + (memOnly ? ' · без сохранения на устройстве' : '') + '</span><span>' + esc(t) + '</span>' +
+      f.innerHTML = '<span>Данные хранятся в Home Assistant · v' + (VERSION.indexOf('__') === 0 ? '?' : VERSION) + (memOnly ? ' · без сохранения на устройстве' : '') + '</span><span>' + esc(t) + '</span>' +
         '<span class="fb"><button data-trash>Корзина' + (trashList().length ? ' (' + trashList().length + ')' : '') + '</button><button data-svc>Сервис</button><button data-sync>Синхронизировать</button>' + (env.logout ? '<button data-logout>Выйти</button>' : '') + '</span>';
     }
     function renderSync() {

@@ -133,9 +133,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     base = Path(__file__).parent
     # адрес папки /korobki_app/ без имени файла статика отдаёт как 403, поэтому страницу отдаёт отдельный обработчик
     hass.http.register_view(AppIndexView(hass, base / "app" / "index.html"))
+    hass.http.register_view(PanelJsView(hass, base / "frontend" / "korobki-panel.js", version))
     await hass.http.async_register_static_paths(
         [
-            StaticPathConfig(STATIC_URL, str(base / "frontend" / "korobki-panel.js"), False),
             StaticPathConfig(APP_URL, str(base / "app"), False),
         ]
     )
@@ -385,6 +385,27 @@ class AppIndexView(HomeAssistantView):
         body = await self._hass.async_add_executor_job(self._index.read_bytes)
         return web.Response(
             body=body, content_type="text/html", charset="utf-8",
+            headers={"Cache-Control": "no-cache"},
+        )
+
+
+class PanelJsView(HomeAssistantView):
+    """Скрипт панели. В него подставляется версия из manifest.json, поэтому версия задаётся только в одном месте."""
+
+    url = STATIC_URL
+    name = "korobki:panel_js"
+    requires_auth = False
+
+    def __init__(self, hass: HomeAssistant, path: Path, version: str) -> None:
+        self._hass = hass
+        self._path = path
+        self._version = version
+
+    async def get(self, request: web.Request) -> web.Response:
+        text = await self._hass.async_add_executor_job(self._path.read_text, "utf-8")
+        return web.Response(
+            body=text.replace("__KOROBKI_VERSION__", self._version).encode("utf-8"),
+            content_type="application/javascript", charset="utf-8",
             headers={"Cache-Control": "no-cache"},
         )
 
