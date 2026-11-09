@@ -23,7 +23,7 @@ from aiohttp import web
 import voluptuous as vol
 
 from homeassistant.components import panel_custom
-from homeassistant.components.http import HomeAssistantView, StaticPathConfig
+from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.helpers import config_validation as cv, intent
 from homeassistant.helpers.event import async_track_time_interval
@@ -131,14 +131,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     hass.http.register_view(PhotoThumbView(hass, photo_dir))
 
     base = Path(__file__).parent
-    # адрес папки /korobki_app/ без имени файла статика отдаёт как 403, поэтому страницу отдаёт отдельный обработчик
-    hass.http.register_view(AppIndexView(hass, base / "app" / "index.html"))
+    hass.http.register_view(AppView(hass, base / "app"))
     hass.http.register_view(PanelJsView(hass, base / "frontend" / "korobki-panel.js", version))
-    await hass.http.async_register_static_paths(
-        [
-            StaticPathConfig(APP_URL, str(base / "app"), False),
-        ]
-    )
     await panel_custom.async_register_panel(
         hass,
         webcomponent_name="korobki-panel",
@@ -369,24 +363,45 @@ def _write_sentences(folder: Path) -> None:
 # ---------- страница приложения ----------
 
 
-class AppIndexView(HomeAssistantView):
-    """GET /korobki_app/ (и без слэша): страница установленного приложения. Без входа, как и сами файлы приложения."""
+APP_FILES = {
+    "index.html": "text/html",
+    "sw.js": "application/javascript",
+    "manifest.json": "application/manifest+json",
+    "icon-192.png": "image/png",
+    "icon-512.png": "image/png",
+    "apple-touch-icon.png": "image/png",
+}
 
-    url = "/korobki_app/"
-    extra_urls = ["/korobki_app"]
+
+class AppView(HomeAssistantView):
+    """Файлы установленного приложения: /korobki_app/, /korobki_app/index.html, sw.js и так далее.
+
+    Каждый файл отдаётся явно, папка целиком не раздаётся (адрес папки Home Assistant отдаёт как 403).
+    Вход не нужен, как и для любого файла интерфейса: данные защищены токеном в API.
+    """
+
+    url = "/korobki_app/{filename}"
+    extra_urls = ["/korobki_app/", "/korobki_app"]
     name = "korobki:app"
     requires_auth = False
 
-    def __init__(self, hass: HomeAssistant, index: Path) -> None:
+    def __init__(self, hass: HomeAssistant, folder: Path) -> None:
         self._hass = hass
-        self._index = index
+        self._folder = folder
 
-    async def get(self, request: web.Request) -> web.Response:
-        body = await self._hass.async_add_executor_job(self._index.read_bytes)
-        return web.Response(
-            body=body, content_type="text/html", charset="utf-8",
-            headers={"Cache-Control": "no-cache"},
-        )
+    async def get(self, request: web.Request, filename: str = "index.html") -> web.Response:
+        filename = filename or "index.html"
+        ctype = APP_FILES.get(filename)
+        if ctype is None:
+            return self.json_message("Не найдено", 404)
+        try:
+            body = await self._hass.async_add_executor_job((self._folder / filename).read_bytes)
+        except OSError:
+            return self.json_message("Не найдено", 404)
+        headers = {"Cache-Control": "no-cache"}
+        if filename == "sw.js":
+            headers["Service-Worker-Allowed"] = "/korobki_app/"
+        return web.Response(body=body, content_type=ctype, headers=headers)
 
 
 class PanelJsView(HomeAssistantView):
