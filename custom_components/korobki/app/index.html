@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ru"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Коробки">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#ffc107">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Коробки</title>
+<style>
+  :root { --bg:#fff; --fg:#1c1c1c; --muted:#6b6b6b; --card:#f4f4f4; --line:#d9d9d9; --acc:#ffc107; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#111; --fg:#eee; --muted:#9a9a9a; --card:#1d1d1d; --line:#333; } }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--fg); font:15px -apple-system, system-ui, sans-serif; }
+  korobki-panel { display:block; height:100%; }
+  #login { box-sizing:border-box; max-width:460px; margin:0 auto; padding:max(24px, env(safe-area-inset-top)) 20px 24px; display:flex; flex-direction:column; gap:12px; }
+  #login[hidden] { display:none; }
+  #login h1 { margin:8px 0 0; }
+  #login p { margin:0; color:var(--muted); line-height:1.4; }
+  #login input, #login button { font:inherit; padding:12px; border-radius:12px; border:1px solid var(--line); background:var(--card); color:var(--fg); }
+  #login button { background:var(--acc); color:#222; font-weight:600; border:0; }
+  #err { color:#e53935; min-height:1.2em; }
+</style></head><body>
+<form id="login" hidden>
+  <h1>Коробки</h1>
+  <p>Вставьте долгосрочный токен Home Assistant: профиль → «Безопасность» → «Долгосрочные токены доступа» → «Создать токен». Он хранится только на этом устройстве. Лучше создать отдельного пользователя Home Assistant только для Коробок и взять токен у него.</p>
+  <input id="tok" type="password" autocomplete="off" placeholder="Токен" required>
+  <button type="submit">Войти</button>
+  <div id="err"></div>
+</form>
+<script>
+(function () {
+  var KEY = 'korobki-token', tok = '';
+  try { tok = localStorage.getItem(KEY) || ''; } catch (e) {}
+  var login = document.getElementById('login');
+  function req(method, path, body, type, signal) {
+    var h = { Authorization: 'Bearer ' + tok }, init = { method: method, headers: h };
+    if (signal) init.signal = signal;
+    if (body != null) {
+      if (body instanceof Blob) { init.body = body; h['Content-Type'] = type || 'image/jpeg'; }
+      else { init.body = JSON.stringify(body); h['Content-Type'] = 'application/json'; }
+    }
+    return fetch(path, init);
+  }
+  function start() {
+    login.hidden = true;
+    var s = document.createElement('script');
+    s.src = '/korobki_static/korobki-panel.js';
+    s.onload = function () {
+      var el = document.createElement('korobki-panel');
+      document.body.appendChild(el);
+      el.transport = {
+        kind: 'pwa', request: req,
+        reauth: function () { el.remove(); login.hidden = false; },
+        logout: function () { try { localStorage.removeItem(KEY); } catch (e) {} location.reload(); }
+      };
+    };
+    document.head.appendChild(s);
+  }
+  if (tok) start(); else login.hidden = false;
+  login.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var v = document.getElementById('tok').value.trim(), err = document.getElementById('err');
+    err.textContent = '';
+    if (!v) return;
+    var old = tok; tok = v;
+    req('POST', '/api/korobki/sync', { since: 0, records: [] }).then(function (r) {
+      if (r.status === 401 || r.status === 403) throw new Error('Токен не подошёл');
+      if (!r.ok) throw new Error('Ошибка ' + r.status);
+      try { localStorage.setItem(KEY, v); } catch (x) {}
+      start();
+    }).catch(function (x) { tok = old; err.textContent = x.message === 'Failed to fetch' ? 'Нет связи с Home Assistant' : x.message; });
+  });
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+})();
+</script></body></html>

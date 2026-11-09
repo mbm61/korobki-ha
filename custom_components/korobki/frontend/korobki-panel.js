@@ -4,7 +4,7 @@
  * Оформление: карточки с градиентом из акцентного цвета места, цвета берутся из темы HA. */
 (function () {
   'use strict';
-  var VERSION = '0.3.0';
+  var VERSION = '0.5.0';
 
   /* ---------- QR-код (байтовый режим, уровень M, версии 1-6) ---------- */
   var QR = (function () {
@@ -156,7 +156,7 @@
     'button { cursor: pointer; }',
     ':focus-visible { outline: 2px solid var(--a, var(--accent)); outline-offset: 2px; }',
     '.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }',
-    '.wrap { max-width: 560px; margin: 0 auto; padding: 8px 16px 40px; }',
+    '.wrap { max-width: 560px; margin: 0 auto; padding: 8px 16px 0; }',
     '.top { position: sticky; top: 0; z-index: 5; background: var(--bg); padding-block: 8px 6px; }',
     '.toprow { display: flex; align-items: center; gap: 4px; }',
     '.menu { width: 40px; height: 40px; flex: none; border: 0; background: none; border-radius: 12px; display: grid; place-items: center; }',
@@ -218,7 +218,7 @@
     '.form .qrow input { width: 96px; }',
     '.actions { display: flex; gap: 8px; flex-wrap: wrap; }',
     '.empty { padding: 22px 16px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 16px; display: grid; gap: 12px; justify-items: center; }',
-    '.foot { margin-top: 28px; padding: 0 2px; font-size: 12px; color: var(--muted); display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }',
+    '.foot { margin-top: 28px; margin-bottom: 20px; padding: 0 2px; font-size: 12px; color: var(--muted); display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }',
     '.sheet { position: fixed; inset: 0; z-index: 20; display: flex; align-items: flex-end; justify-content: center; }',
     '.sheet[hidden], .toast[hidden], .menu[hidden] { display: none; }',
     '.scrim { position: absolute; inset: 0; background: rgba(8, 12, 18, .5); }',
@@ -236,7 +236,7 @@
     '.viewer { display: grid; gap: 12px; }',
     '.viewer img { width: 100%; max-height: 62vh; object-fit: contain; border-radius: 12px; background: color-mix(in srgb, var(--fg) 6%, transparent); }',
     '.vnav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }',
-    '.toast { position: fixed; left: 50%; transform: translateX(-50%); z-index: 30; max-width: min(92vw, 420px); bottom: calc(24px + env(safe-area-inset-bottom, 0px)); padding: 10px 16px; border-radius: 12px; background: var(--fg); color: var(--bg); font-size: 14px; text-align: center; }',
+    '.toast { position: fixed; left: 50%; transform: translateX(-50%); z-index: 30; max-width: min(92vw, 420px); bottom: calc(80px + env(safe-area-inset-bottom, 0px)); pointer-events: none; padding: 10px 16px; border-radius: 12px; background: var(--fg); color: var(--bg); font-size: 14px; text-align: center; }',
     '.pill { flex: none; height: 36px; padding: 0 14px 0 12px; border-radius: 18px; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); background: color-mix(in srgb, var(--accent) 14%, var(--card)); }',
     '.pill.on { background: color-mix(in srgb, var(--accent) 34%, var(--card)); }',
     '.h1row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }',
@@ -255,6 +255,32 @@
     '.inline .field { flex: 1; min-width: 0; }',
     '.banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; margin-top: 8px; border-radius: 12px; font-size: 14px; border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); background: color-mix(in srgb, var(--accent) 14%, var(--card)); }',
     '.card .field { height: 38px; }',
+    '.syncbar { --st: #42a5f5; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; padding: 8px 12px; border-radius: 12px; font-size: 13px; border: 1px solid color-mix(in srgb, var(--st) 50%, transparent); background: color-mix(in srgb, var(--st) 14%, var(--card)); }',
+    '.syncbar[hidden] { display: none; }',
+    '.mini2 { flex: none; height: 30px; padding: 0 12px; border-radius: 10px; font-size: 13px; font-weight: 600; border: 1px solid var(--line); background: var(--card); }',
+    '.foot button { background: none; border: 0; padding: 6px 0; font-size: 12px; color: var(--muted); text-decoration: underline; }',
+    '.fb { display: inline-flex; gap: 14px; }',
+    '.pill[hidden], .bnav[hidden], .iconbtn[hidden] { display: none; }',
+    '.wrap { min-height: 100%; display: flex; flex-direction: column; }',
+    '.wrap main { flex: 1; }',
+    '.srow { display: flex; gap: 8px; align-items: center; }',
+    '.srow .search { flex: 1; min-width: 0; }',
+    '.iconbtn { width: 44px; height: 44px; flex: none; border-radius: 12px; border: 1px solid var(--line); background: var(--card); display: grid; place-items: center; color: var(--muted); }',
+    '.iconbtn.on { color: var(--fg); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 20%, var(--card)); }',
+    '.bnav { position: sticky; bottom: 0; z-index: 4; display: flex; gap: 10px; padding: 10px 0 calc(10px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, var(--bg) 78%, transparent); }',
+    '.bnav button { flex: 1; height: 46px; border-radius: 14px; font-size: 15px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 12%, var(--card)) 0%, var(--card) 65%); }',
+    '.bnav button:active { transform: scale(.98); }',
+    '.fgroup { display: grid; gap: 8px; padding: 14px; margin-bottom: 12px; }',
+    '.sel { height: 38px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); padding: 0 10px; font-size: 14px; }',
+    '.ta.bulk { min-height: 120px; }',
+    '.sub2 { font-size: 12px; color: var(--muted); }',
+    '.tgl { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }',
+    '.tgl input { width: 20px; height: 20px; }',
+    '.mrow { width: 100%; text-align: left; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); font-size: 15px; }',
+    '.mrow[disabled] { opacity: .4; }',
+    '.mrow .sub { display: block; }',
+    '.svcrow { display: grid; gap: 6px; }',
+    '.warn2 { font-size: 13px; padding: 8px 12px; border-radius: 12px; border: 1px solid color-mix(in srgb, #ffa000 55%, transparent); background: color-mix(in srgb, #ffa000 14%, var(--card)); }',
     '@media (prefers-reduced-motion: reduce) { .card, .th.wait { transition: none; animation: none; } }'
   ].join('\n');
 
@@ -265,20 +291,26 @@
     '<button class="menu" id="back" hidden aria-label="Назад"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>' +
     '<nav class="crumbs" id="crumbs" aria-label="Путь"></nav>' +
     '<button class="pill" id="catsBtn" aria-label="Категории"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M9 4 7 20M17 4l-2 16M4 9h16M3.5 15h16"/></svg><span>Категории</span></button></div>' +
-    '<label class="search"><span class="sr">Поиск</span>' +
+    '<div class="srow"><label class="search"><span class="sr">Поиск</span>' +
     '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>' +
-    '<input id="q" type="search" placeholder="Найти вещь, коробку или место" autocomplete="off"></label></header>' +
-    '<main id="view"></main><footer class="foot" id="foot"></footer></div>' +
+    '<input id="q" type="search" placeholder="Найти вещь, коробку или место" autocomplete="off"></label>' +
+    '<button class="iconbtn" id="filtBtn" aria-label="Фильтры" title="Фильтры"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16l-6 7.5V19l-4-2v-4.5Z"/></svg></button></div></header><div class="syncbar" id="syncbar" hidden></div>' +
+    '<main id="view"></main><footer class="foot" id="foot"></footer>' +
+    '<nav class="bnav" id="bnav" hidden aria-label="Навигация"><button data-home aria-label="В корень дома"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7M6 10v10h12V10"/></svg>Домой</button>' +
+    '<button data-goback aria-label="Назад"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Назад</button></nav></div>' +
     '<div class="sheet" id="sheet" hidden></div><div class="toast" id="toast" hidden></div>' +
-    '<input class="sr" id="pick" type="file" accept="image/*" multiple tabindex="-1" aria-hidden="true">';
+    '<input class="sr" id="pick" type="file" accept="image/*" multiple tabindex="-1" aria-hidden="true">' +
+    '<input class="sr" id="impick" type="file" accept=".json,application/json" tabindex="-1" aria-hidden="true">';
 
   /* ---------- Приложение ---------- */
-  function createApp(host, sr, getHass) {
+  function createApp(host, sr, env) {
     var DEF = '#4f729f', MAXPH = 8;
     var uid = function () { return Math.random().toString(36).slice(2, 9); };
-    var P = function (n, c, ch) { return { id: uid(), t: 'place', n: n, c: c, ch: ch, ph: [] }; };
-    var B = function (n, ch, c) { return { id: uid(), t: 'box', n: n, c: c, ch: ch, ph: [] }; };
-    var I = function (n, q) { return { id: uid(), t: 'item', n: n, q: q || 1, ph: [] }; };
+    var oSeq = 0;
+    function nextO() { return Date.now() * 1000 + (oSeq++ % 1000); }
+    var P = function (n, c, ch) { return { id: uid(), t: 'place', n: n, c: c, ch: ch, ph: [], o: nextO() }; };
+    var B = function (n, ch, c) { return { id: uid(), t: 'box', n: n, c: c, ch: ch, ph: [], o: nextO() }; };
+    var I = function (n, q) { return { id: uid(), t: 'item', n: n, q: q || 1, ph: [], o: nextO() }; };
 
     function emptyRoot() { return { id: 'root', t: 'home', n: 'Дом', ch: [], ph: [] }; }
     function exampleChildren() {
@@ -294,10 +326,13 @@
       ];
     }
 
-    var root = emptyRoot(), rev = 0, settings = normSettings({});
-    var loaded = false, dirty = false, inflight = false, saveTimer = null, statusText = '', unsub = null, destroyed = false;
-    var narrow = false, pendingRoute = null, lastRoutePath = null;
-    var S = { mode: null, catId: null, stale: false, path: [], q: '', adding: false, addType: null, draft: '', edit: false, conf: null, focus: false, addTags: [], draftCat: '', sheet: null, pick: null, error: '' };
+    var root = emptyRoot(), settings = normSettings({});
+    var recs = {}, dirty = {}, upq = [], delq = [], since = 0, device = '', everSynced = false;
+    var loaded = false, destroyed = false, memOnly = false, booted = false;
+    var net = 'idle', lastSync = 0, syncing = null, again = false;
+    var persistT = null, syncT = null, pollT = null, unsub = null;
+    var narrow = false, pendingRoute = null, lastRoutePath = null, dsince = 0, expBlob = null, impData = null;
+    var S = { mode: null, catId: null, stale: false, path: [], q: '', adding: false, addType: null, draft: '', edit: false, conf: null, focus: false, addTags: [], draftCat: '', sheet: null, pick: null, error: '', bulk: false, keep: false, f: { cats: [], nocat: false, nophoto: false, sort: 'path' }, svc: { stats: null, est: null, persisted: null, busy: '', exp: null, imp: null } };
 
     function normSettings(x) {
       var o = Object.assign({ qr: 'app', base: '', cats: [] }, x || {});
@@ -400,7 +435,7 @@
       var low = name.toLowerCase();
       var ex = settings.cats.filter(function (c) { return c.n.toLowerCase() === low; })[0];
       if (ex) return ex;
-      var c = { id: uid(), n: name, c: CATPAL[settings.cats.length % CATPAL.length] };
+      var c = { id: uid(), n: name, c: CATPAL[settings.cats.length % CATPAL.length], o: nextO() };
       settings.cats.push(c);
       return c;
     }
@@ -438,61 +473,227 @@
       var c = x.c, title = esc(c.n) + (c.t === 'item' ? ' × ' + c.q : '');
       return '<div class="card" style="--a:' + x.a + '" data-hit="' + x.path.join(',') + '"' + (c.t === 'item' ? ' data-hitid="' + c.id + '"' : '') + ' tabindex="0" role="button">' +
         tileHtml(c) +
-        '<div class="t"><div class="name">' + title + '</div><div class="sub">' + esc(x.where.length ? x.where.join(' › ') : 'Дом') + '</div>' + (c.t === 'item' ? metaHtml(c) : '') + '</div>' +
+        '<div class="t"><div class="name">' + title + '</div><div class="sub">' + esc([root.n].concat(x.where).join(' › ')) + '</div>' + (c.t === 'item' ? metaHtml(c) : '') + '</div>' +
         '<span class="chev">' + svg('chev', 20) + '</span></div>';
     }
 
-    /* --- обмен с Home Assistant --- */
-    function setStatus(t) { statusText = t; var f = $('foot'); if (f) renderFoot(); }
-    function load() {
-      return getHass().callWS({ type: 'korobki/get' }).then(function (r) {
-        rev = r.rev; root = r.root || emptyRoot();
-        settings = normSettings(r.settings); S.stale = !!(r.version && r.version !== VERSION);
-        loaded = true; S.error = '';
-        render();
-        if (pendingRoute) { var pr = pendingRoute; pendingRoute = null; applyRoute(pr, true); }
-      }).catch(function () {
-        S.error = 'Не удалось получить данные от Home Assistant. Проверьте, что в configuration.yaml есть строка korobki: и HA перезапущен.';
-        render();
-      });
+    /* --- хранилище на устройстве --- */
+    var DB = null, DBNAME = 'korobki-local-' + env.kind;
+    function dbOpen(cb) {
+      try {
+        var r = indexedDB.open(DBNAME, 1);
+        r.onupgradeneeded = function () { r.result.createObjectStore('kv'); r.result.createObjectStore('photos'); };
+        r.onsuccess = function () { DB = r.result; cb(true); };
+        r.onerror = function () { cb(false); };
+        r.onblocked = function () { cb(false); };
+      } catch (e) { cb(false); }
     }
-    function save() {
-      dirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(flush, 300); setStatus('Сохранение…');
+    function dbGet(store, key, cb) {
+      if (!DB) return cb(null);
+      try {
+        var rq = DB.transaction(store, 'readonly').objectStore(store).get(key);
+        rq.onsuccess = function () { cb(rq.result || null); };
+        rq.onerror = function () { cb(null); };
+      } catch (e) { cb(null); }
     }
-    function flush() {
-      if (inflight || !dirty || !loaded) return;
-      inflight = true; dirty = false;
-      getHass().callWS({ type: 'korobki/save', rev: rev, root: root, settings: settings }).then(function (r) {
-        inflight = false;
-        if (r.ok) { rev = r.rev; }
-        else {
-          dirty = false; rev = r.rev; root = r.root || emptyRoot();
-          settings = normSettings(r.settings);
-          toast('Данные изменились на другом устройстве. Последняя правка не сохранена.');
-          render();
-        }
-        if (dirty) flush(); else setStatus('');
-      }).catch(function () {
-        inflight = false; dirty = true; setStatus('Нет связи');
-        toast('Не удалось сохранить. Проверьте связь с Home Assistant.');
-      });
+    function dbPut(store, key, val) { if (!DB) return; try { DB.transaction(store, 'readwrite').objectStore(store).put(val, key); } catch (e) {} }
+    function dbDel(store, key) { if (!DB) return; try { DB.transaction(store, 'readwrite').objectStore(store).delete(key); } catch (e) {} }
+    function persist(now) { clearTimeout(persistT); persistT = setTimeout(doPersist, now ? 0 : 250); }
+    function doPersist() {
+      clearTimeout(persistT);
+      dbPut('kv', 'state', { recs: recs, dirty: Object.keys(dirty), upq: upq, delq: delq, since: since, device: device, synced: everSynced, dsince: dsince });
     }
 
-    /* --- фото --- */
+    /* --- записи для синхронизации: каждая вещь, коробка, категория это отдельная запись с меткой времени --- */
+    function norm(r) {
+      return {
+        id: r.id, p: r.p == null ? null : r.p, t: r.t, n: r.n == null ? '' : String(r.n), c: r.c || null,
+        q: r.q == null ? null : Number(r.q), tg: Array.isArray(r.tg) ? r.tg.slice() : [], note: r.note || '',
+        ph: Array.isArray(r.ph) ? r.ph.slice() : [], o: r.o || 0, qr: r.qr || '', base: r.base || ''
+      };
+    }
+    function sig(r) { var x = norm(r); return JSON.stringify([x.p, x.t, x.n, x.c, x.q, x.tg, x.note, x.ph, x.o, x.qr, x.base]); }
+    function flatten() {
+      var out = {};
+      (function walk(n, parent) {
+        out[n.id] = norm({ id: n.id, p: parent, t: n.t, n: n.n, c: n.c, q: n.t === 'item' ? (n.q == null ? 1 : n.q) : null, tg: n.tg, note: n.note, ph: n.ph, o: n.o || 0 });
+        (n.ch || []).forEach(function (c) { if (!c.o) c.o = nextO(); walk(c, n.id); });
+      })(root, null);
+      settings.cats.forEach(function (c) {
+        if (!c.o) c.o = nextO();
+        out[c.id] = norm({ id: c.id, p: null, t: 'cat', n: c.n, c: c.c, o: c.o });
+      });
+      out.settings = norm({ id: 'settings', p: null, t: 'settings', n: '', qr: settings.qr, base: settings.base });
+      return out;
+    }
+    function reconcile() {
+      var flat = flatten(), now = Date.now(), any = false;
+      Object.keys(flat).forEach(function (id) {
+        var f = flat[id], r = recs[id];
+        if (!r || r.d || sig(r) !== sig(f)) {
+          var rec = norm(f); rec.u = Math.max(now, r ? r.u + 1 : 0); rec.d = false;
+          recs[id] = rec; dirty[id] = 1; any = true;
+        }
+      });
+      Object.keys(recs).forEach(function (id) {
+        var r = recs[id];
+        if (!r.d && !flat[id]) {
+          var t = norm(r); t.u = Math.max(now, r.u + 1); t.d = true;
+          recs[id] = t; dirty[id] = 1; any = true;
+        }
+      });
+      return any;
+    }
+    function byO(a, b) { return (a.o - b.o) || (a.id < b.id ? -1 : 1); }
+    function buildTree() {
+      var kids = {};
+      Object.keys(recs).forEach(function (id) {
+        var r = recs[id];
+        if (r.d || r.t === 'cat' || r.t === 'settings' || id === 'root') return;
+        (kids[r.p] = kids[r.p] || []).push(r);
+      });
+      function node(r) {
+        var n = { id: r.id, t: r.t, n: r.n, o: r.o, ph: (r.ph || []).slice() };
+        if (r.c) n.c = r.c;
+        if (r.t === 'item') { n.q = r.q == null ? 1 : r.q; n.tg = (r.tg || []).slice(); n.note = r.note || ''; }
+        else n.ch = (kids[r.id] || []).sort(byO).map(node);
+        return n;
+      }
+      var rr = recs.root && !recs.root.d ? recs.root : null;
+      root = rr ? { id: 'root', t: 'home', n: rr.n || 'Дом', o: 0, ph: (rr.ph || []).slice(), ch: (kids.root || []).sort(byO).map(node) } : emptyRoot();
+      var cats = Object.keys(recs).map(function (id) { return recs[id]; }).filter(function (r) { return r.t === 'cat' && !r.d; })
+        .sort(byO).map(function (r) { return { id: r.id, n: r.n, c: r.c, o: r.o }; });
+      var st = recs.settings && !recs.settings.d ? recs.settings : null;
+      settings = { qr: (st && st.qr) || 'app', base: (st && st.base) || '', cats: cats };
+    }
+    function applyRemote(list) {
+      var changed = false;
+      list.forEach(function (r) {
+        var l = recs[r.id];
+        delete r.r;
+        if (!l || r.u > l.u) {
+          if (!l || sig(l) !== sig(r) || !!l.d !== !!r.d) changed = true;
+          recs[r.id] = r; delete dirty[r.id];
+        } else if (r.u === l.u) { if (r.d && l.d && !r.n && l.n) recs[r.id] = r; delete dirty[r.id]; }
+      });
+      return changed;
+    }
+
+    /* --- обмен с Home Assistant --- */
+    function call(method, path, body, type) {
+      var ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      var tm = setTimeout(function () { if (ctl) ctl.abort(); }, 20000);
+      return env.request(method, path, body, type, ctl ? ctl.signal : undefined).then(function (r) {
+        clearTimeout(tm);
+        if (r.status === 401 || r.status === 403) { var e = new Error('auth'); e.auth = true; throw e; }
+        if (!r.ok && r.status !== 404) { var e2 = new Error('http ' + r.status); e2.http = r.status; throw e2; }
+        return r;
+      }, function (err) { clearTimeout(tm); throw err; });
+    }
+    function pendingCount() { return Object.keys(dirty).length + upq.length + delq.length; }
+    function scheduleSync(ms) { clearTimeout(syncT); syncT = setTimeout(sync, ms || 800); }
+    function save() { reconcile(); if (pendingCount() && !dsince) dsince = Date.now(); persist(); renderSync(); scheduleSync(900); }
+
+    function pushPull() {
+      var ids = Object.keys(dirty);
+      var list = ids.filter(function (id) { return recs[id]; }).map(function (id) { return Object.assign({}, recs[id]); });
+      return call('POST', '/api/korobki/sync', { since: since, records: list, device: device }).then(function (r) { return r.json(); }).then(function (j) {
+        var changed = applyRemote(j.records || []);
+        since = j.rev; everSynced = true;
+        S.stale = !!(j.version && j.version !== VERSION);
+        if (changed) { buildTree(); render(); }
+        doPersist();
+      });
+    }
+    function uploadPhotos() {
+      return upq.slice().reduce(function (p, id) {
+        return p.then(function () {
+          return new Promise(function (res) { dbGet('photos', id, res); }).then(function (rec) {
+            if (!rec || !rec.full) { upq = upq.filter(function (x) { return x !== id; }); return null; }
+            return call('PUT', '/api/korobki/photo/' + id, abToBlob(rec.full), 'image/jpeg')
+              .then(function () { return rec.thumb ? call('PUT', '/api/korobki/photo/' + id + '/thumb', abToBlob(rec.thumb), 'image/jpeg') : null; })
+              .then(function () { upq = upq.filter(function (x) { return x !== id; }); rec.up = 1; dbPut('photos', id, rec); doPersist(); }, function (e) {
+                if (e && e.http && e.http < 500) { upq = upq.filter(function (x) { return x !== id; }); return null; }
+                throw e;
+              });
+          });
+        });
+      }, Promise.resolve());
+    }
+    function deletePhotos() {
+      return delq.slice().reduce(function (p, id) {
+        return p.then(function () {
+          return call('DELETE', '/api/korobki/photo/' + id).then(function () { delq = delq.filter(function (x) { return x !== id; }); doPersist(); });
+        });
+      }, Promise.resolve());
+    }
+    function sync() {
+      if (destroyed || !booted) return Promise.resolve();
+      if (syncing) { again = true; return syncing; }
+      var was = everSynced;
+      net = 'sync'; renderSync();
+      syncing = uploadPhotos().then(deletePhotos).then(pushPull).then(function () {
+        net = 'ok'; lastSync = Date.now(); if (!pendingCount()) dsince = 0; retryPhotos(); prefetchThumbs(); gcLocalPhotos();
+      }).catch(function (e) {
+        net = e && e.auth ? 'auth' : 'offline';
+      }).then(function () {
+        syncing = null;
+        if (!was) render(); else { renderSync(); renderFoot(); }
+        if (again) { again = false; return sync(); }
+      });
+      return syncing;
+    }
+
+    /* --- фото: сначала сохраняются на устройстве, на сервер уходят при связи --- */
     var URLS = {}, PEND = {}, rq = false;
     function later() { if (rq || destroyed) return; rq = true; requestAnimationFrame(function () { rq = false; render(); }); }
+    function abToBlob(ab) { return new Blob([ab], { type: 'image/jpeg' }); }
+    function blobToAb(b) {
+      if (b.arrayBuffer) return b.arrayBuffer();
+      return new Promise(function (res) { var fr = new FileReader(); fr.onload = function () { res(fr.result); }; fr.readAsArrayBuffer(b); });
+    }
+    function newPhotoId() {
+      var a = new Uint8Array(8); (window.crypto || window.msCrypto).getRandomValues(a);
+      return Array.prototype.map.call(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+    }
     function photoUrl(id, full) {
       var key = id + (full ? 'f' : 't');
       if (URLS[key]) return URLS[key];
       if (!PEND[key]) {
         PEND[key] = 1;
-        getHass().fetchWithAuth('/api/korobki/photo/' + id + (full ? '' : '/thumb')).then(function (r) {
-          if (!r.ok) throw new Error('photo');
-          return r.blob();
-        }).then(function (b) { URLS[key] = URL.createObjectURL(b); delete PEND[key]; later(); })
-          .catch(function () { PEND[key] = 2; });
+        dbGet('photos', id, function (rec) {
+          var ab = rec && (full ? rec.full : rec.thumb);
+          if (ab) { URLS[key] = URL.createObjectURL(abToBlob(ab)); delete PEND[key]; later(); return; }
+          fetchPhoto(id, full, key);
+        });
       }
       return null;
+    }
+    function fetchPhoto(id, full, key) {
+      call('GET', '/api/korobki/photo/' + id + (full ? '' : '/thumb')).then(function (r) {
+        if (!r.ok) { var e = new Error('missing'); e.missing = true; throw e; }
+        return r.blob();
+      }).then(function (b) {
+        return blobToAb(b).then(function (ab) {
+          dbGet('photos', id, function (cur) {
+            cur = cur || { up: 1 };
+            if (full) cur.full = ab; else cur.thumb = ab;
+            dbPut('photos', id, cur);
+          });
+          URLS[key] = URL.createObjectURL(b); delete PEND[key]; later();
+        });
+      }).catch(function (e) { PEND[key] = e && e.missing ? 3 : 2; });
+    }
+    function retryPhotos() {
+      var any = false;
+      Object.keys(PEND).forEach(function (k) { if (PEND[k] === 2) { delete PEND[k]; any = true; } });
+      if (any) later();
+    }
+    function prefetchThumbs() {
+      Object.keys(recs).forEach(function (id) {
+        var r = recs[id];
+        if (!r.d && r.ph) r.ph.forEach(function (pid) { photoUrl(pid); });
+      });
     }
     function firstPhoto(n) { return n.ph && n.ph[0] ? photoUrl(n.ph[0]) : null; }
     function toBlob(img, max, q, cb) {
@@ -511,25 +712,309 @@
       img.onerror = function () { URL.revokeObjectURL(url); cb(null, null); };
       img.src = url;
     }
-    function uploadPhoto(file) {
+    function addPhotoLocal(file) {
       return new Promise(function (resolve) {
         shrink(file, function (full, thumb) {
           if (!full || !thumb) return resolve(null);
-          var H = getHass(), pid;
-          H.fetchWithAuth('/api/korobki/photo', { method: 'POST', body: full, headers: { 'Content-Type': 'image/jpeg' } })
-            .then(function (r) { if (!r.ok) throw new Error('upload'); return r.json(); })
-            .then(function (j) {
-              pid = j.id;
-              return H.fetchWithAuth('/api/korobki/photo/' + pid + '/thumb', { method: 'PUT', body: thumb, headers: { 'Content-Type': 'image/jpeg' } });
-            })
-            .then(function () { URLS[pid + 'f'] = URL.createObjectURL(full); URLS[pid + 't'] = URL.createObjectURL(thumb); resolve(pid); })
-            .catch(function () { resolve(null); });
+          Promise.all([blobToAb(full), blobToAb(thumb)]).then(function (abs) {
+            var pid = newPhotoId();
+            dbPut('photos', pid, { full: abs[0], thumb: abs[1], up: 0 });
+            URLS[pid + 'f'] = URL.createObjectURL(full); URLS[pid + 't'] = URL.createObjectURL(thumb);
+            upq.push(pid); persist();
+            resolve(pid);
+          }).catch(function () { resolve(null); });
         });
       });
     }
     function dropPhoto(pid) {
       ['f', 't'].forEach(function (s) { if (URLS[pid + s]) { URL.revokeObjectURL(URLS[pid + s]); delete URLS[pid + s]; } delete PEND[pid + s]; });
-      getHass().fetchWithAuth('/api/korobki/photo/' + pid, { method: 'DELETE' }).catch(function () {});
+      dbDel('photos', pid);
+      upq = upq.filter(function (x) { return x !== pid; });
+      if (delq.indexOf(pid) < 0) delq.push(pid);
+      persist();
+    }
+
+    /* --- корзина, перенос, копия --- */
+    var TRASH_MS = 30 * 86400000, WIN = 10000;
+    function trashList() {
+      var now = Date.now(), out = [];
+      Object.keys(recs).forEach(function (id) {
+        var r = recs[id];
+        if (!r.d || !r.n || (r.t !== 'place' && r.t !== 'box' && r.t !== 'item')) return;
+        if (now - r.u > TRASH_MS) return;
+        var par = r.p && recs[r.p];
+        if (par && par.d && par.n && Math.abs(par.u - r.u) <= WIN) return;
+        out.push(r);
+      });
+      return out.sort(function (a, b) { return b.u - a.u; });
+    }
+    function trashKids(r) {
+      var k = 0;
+      (function walk(id) {
+        Object.keys(recs).forEach(function (cid) {
+          var c = recs[cid];
+          if (c.p === id && c.d && c.n && Math.abs(c.u - r.u) <= WIN) { k++; walk(cid); }
+        });
+      })(r.id);
+      return k;
+    }
+    function restoreRec(id) {
+      var r = recs[id]; if (!r || !r.d) return;
+      var now = Date.now(), base = r.u, list = [];
+      function revive(x) { x.d = false; x.u = Math.max(now, x.u + 1); dirty[x.id] = 1; }
+      var par = r.p && recs[r.p];
+      while (par && par.d && par.n) { list.push(par); par = par.p && recs[par.p]; }
+      if (!r.p || !recs[r.p] || (recs[r.p].d && !recs[r.p].n)) r.p = 'root';
+      list.forEach(revive);
+      (function walk(x) {
+        Object.keys(recs).forEach(function (cid) {
+          var c = recs[cid];
+          if (c.p === x && c.d && c.n && Math.abs(c.u - base) <= WIN) { revive(c); walk(cid); }
+        });
+      })(id);
+      revive(r);
+      buildTree(); persist(); renderSync(); scheduleSync(600);
+    }
+    function emptyTrash() {
+      var now = Date.now(), live = {};
+      Object.keys(recs).forEach(function (id) { if (!recs[id].d) (recs[id].ph || []).forEach(function (p) { live[p] = 1; }); });
+      Object.keys(recs).forEach(function (id) {
+        var r = recs[id];
+        if (!r.d || !r.n || (r.t !== 'place' && r.t !== 'box' && r.t !== 'item')) return;
+        (r.ph || []).forEach(function (pid) {
+          if (live[pid]) return;
+          if (delq.indexOf(pid) < 0) delq.push(pid);
+          upq = upq.filter(function (x) { return x !== pid; }); dbDel('photos', pid);
+        });
+        r.n = ''; r.note = ''; r.tg = []; r.ph = []; r.q = null; r.c = null; r.u = Math.max(now, r.u + 1); dirty[id] = 1;
+      });
+      if (!dsince && pendingCount()) dsince = now;
+      persist(); renderSync(); scheduleSync(600);
+    }
+    function parentOf(id) {
+      var found = null;
+      (function walk(n) { (n.ch || []).forEach(function (c) { if (c.id === id) found = n; else if (c.t !== 'item') walk(c); }); })(root);
+      return found;
+    }
+    function moveTargets(n) {
+      var out = [], bad = {}, par = parentOf(n.id);
+      (function mark(x) { bad[x.id] = 1; (x.ch || []).forEach(mark); })(n);
+      (function walk(c, names) {
+        if (c.t === 'item') return;
+        if (!bad[c.id] && ALLOW[c.t].indexOf(n.t) > -1) out.push({ node: c, path: names, cur: !!par && par.id === c.id });
+        (c.ch || []).forEach(function (k) { walk(k, names.concat(k.n)); });
+      })(root, [root.n]);
+      return out;
+    }
+    function doMove(id, to) {
+      var n = findNode(root, id), t = findNode(root, to);
+      if (!n || !t) return;
+      removeNode(root, id); t.ch.push(n);
+      S.sheet = null; save(); render(); toast('Перемещено: ' + n.n + ' → ' + t.n);
+    }
+    function cloneNode(n) {
+      var c = { id: uid(), t: n.t, n: n.n, ph: [], o: nextO() };
+      if (n.c) c.c = n.c;
+      if (n.t === 'item') { c.q = n.q; c.tg = (n.tg || []).slice(); c.note = n.note || ''; }
+      else c.ch = (n.ch || []).map(cloneNode);
+      return c;
+    }
+    function doDup(id) {
+      var n = findNode(root, id), par = parentOf(id);
+      if (!n || !par) return;
+      var c = cloneNode(n); c.n = n.n + ' (копия)';
+      par.ch.push(c); S.sheet = null; save(); render(); toast('Копия создана (без фото)');
+    }
+
+    /* --- фильтры и поиск --- */
+    function findView() {
+      var q = S.q.trim().toLowerCase().replace(/^#/, ''), f = S.f, hits = [], finding = S.mode === 'find';
+      var onlyItems = f.cats.length || f.nocat || f.nophoto;
+      walkAll(function (c, ids, names, a) {
+        if (q && !matches(c, q)) return;
+        if (onlyItems) {
+          if (c.t !== 'item') return;
+          var has = (c.tg || []).filter(catById);
+          if (f.nocat && has.length) return;
+          if (f.cats.length && !f.cats.every(function (id) { return (c.tg || []).indexOf(id) > -1; })) return;
+          if (f.nophoto && (c.ph || []).length) return;
+        } else if (finding && !q && c.t !== 'item') return;
+        hits.push({ c: c, path: c.t === 'item' ? ids : ids.concat(c.id), where: names, a: a });
+      });
+      if (f.sort === 'name') hits.sort(function (x, y) { return x.c.n.localeCompare(y.c.n, 'ru'); });
+      else if (f.sort === 'new') hits.sort(function (x, y) { return (y.c.o || 0) - (x.c.o || 0); });
+      else if (f.sort === 'old') hits.sort(function (x, y) { return (x.c.o || 0) - (y.c.o || 0); });
+      var h = '<div class="head"><h1>' + (finding ? 'Фильтры' : 'Поиск') + '</h1><div class="stat">' + (hits.length ? 'Найдено: ' + hits.length : 'Ничего не найдено') + '</div></div>';
+      if (finding) {
+        h += '<div class="form fgroup" style="--a:' + DEF + '">';
+        if (settings.cats.length) {
+          h += '<div class="sec">Категории (все выбранные сразу)</div><div class="chips">' + settings.cats.map(function (c) {
+            var on = f.cats.indexOf(c.id) > -1;
+            return '<button type="button" class="chip' + (on ? ' on' : '') + '" style="--c:' + c.c + '" data-fcat="' + c.id + '" aria-pressed="' + on + '">#' + esc(c.n) + '</button>';
+          }).join('') + '</div>';
+        }
+        h += '<div class="chips"><button type="button" class="chip' + (f.nocat ? ' on' : '') + '" style="--c:#8d6e63" data-fnocat aria-pressed="' + f.nocat + '">Без категории</button>' +
+          '<button type="button" class="chip' + (f.nophoto ? ' on' : '') + '" style="--c:#42a5f5" data-fnophoto aria-pressed="' + f.nophoto + '">Без фото</button></div>' +
+          '<label class="tgl">Порядок <select class="sel" data-fsort aria-label="Порядок">' +
+          [['path', 'По расположению'], ['name', 'По названию'], ['new', 'Сначала новые'], ['old', 'Сначала старые']].map(function (o) { return '<option value="' + o[0] + '"' + (f.sort === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
+          '</select></label>' +
+          '<div class="actions"><button class="btn" data-freset>Сбросить</button></div></div>';
+      }
+      if (!hits.length) return h + '<div class="empty">' + (q ? 'По запросу «' + esc(S.q.trim()) + '» ничего нет. Проверьте написание.' : 'Под такие условия ничего не подходит.') + '</div>';
+      return h + '<div class="list">' + hits.map(hitCard).join('') + '</div>';
+    }
+
+    /* --- корзина (страница) --- */
+    function trashView() {
+      var list = trashList();
+      var h = '<div class="head"><h1>Корзина</h1><div class="stat">' + (list.length ? 'Удалённое хранится 30 дней' : 'Пусто') + '</div></div>';
+      if (!list.length) return h + '<div class="empty">Удалённые места, коробки и вещи появятся здесь. Их можно вернуть вместе с содержимым.</div>';
+      h += '<div class="bar" style="--a:' + DEF + '"><button class="btn danger' + (S.conf === 'emptytrash' ? ' ask' : '') + '" data-emptytrash>' + (S.conf === 'emptytrash' ? 'Точно очистить? Фото тоже удалятся' : 'Очистить корзину') + '</button></div>';
+      return h + '<div class="list">' + list.map(function (r) {
+        var kids = trashKids(r), left = Math.max(1, Math.ceil((TRASH_MS - (Date.now() - r.u)) / 86400000));
+        return '<div class="card" style="--a:' + (r.c || DEF) + ';cursor:default"><div class="tile">' + svg(r.t) + '</div>' +
+          '<div class="t"><div class="name">' + esc(r.n) + '</div><div class="sub">' + KIND[r.t] + (kids ? ' · внутри записей: ' + kids : '') + ' · осталось дн.: ' + left + '</div></div>' +
+          '<button class="btn primary" data-restore="' + r.id + '">Вернуть</button></div>';
+      }).join('') + '</div>';
+    }
+
+    /* --- сервис: копии, хранилище, фото на сервере --- */
+    function requestPersist() {
+      try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().then(function (v) { S.svc.persisted = v; }); } catch (e) {}
+    }
+    function gcLocalPhotos() {
+      if (!DB) return;
+      var used = {}; upq.forEach(function (x) { used[x] = 1; });
+      Object.keys(recs).forEach(function (id) { (recs[id].ph || []).forEach(function (pid) { used[pid] = 1; }); });
+      try {
+        var st = DB.transaction('photos', 'readwrite').objectStore('photos'), rq = st.getAllKeys();
+        rq.onsuccess = function () { (rq.result || []).forEach(function (k) { if (!used[k]) st.delete(k); }); };
+      } catch (e) {}
+    }
+    function abToB64(ab) {
+      var u = new Uint8Array(ab), s2 = '';
+      for (var i = 0; i < u.length; i += 0x8000) s2 += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+      return btoa(s2);
+    }
+    function b64ToAb(b) {
+      var bin = atob(b), u = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+      return u.buffer;
+    }
+    function getPhotoBuf(pid, full) {
+      return new Promise(function (res) { dbGet('photos', pid, res); }).then(function (rec) {
+        var ab = rec && (full ? rec.full : rec.thumb);
+        if (ab) return ab;
+        return call('GET', '/api/korobki/photo/' + pid + (full ? '' : '/thumb')).then(function (r) { return r.ok ? r.blob() : null; })
+          .then(function (b) {
+            if (!b) return null;
+            return blobToAb(b).then(function (buf) {
+              dbGet('photos', pid, function (cur) { cur = cur || { up: 1 }; if (full) cur.full = buf; else cur.thumb = buf; dbPut('photos', pid, cur); });
+              return buf;
+            });
+          }).catch(function () { return null; });
+      });
+    }
+    function doExport(withPh) {
+      S.svc.busy = 'Готовлю копию…'; S.svc.exp = null; expBlob = null; render();
+      var data = { app: 'korobki', format: 1, version: VERSION, created: new Date().toISOString(), recs: recs };
+      var ids = [], photos = {}, i = 0;
+      if (withPh) Object.keys(recs).forEach(function (id) { (recs[id].ph || []).forEach(function (pid) { if (ids.indexOf(pid) < 0) ids.push(pid); }); });
+      return ids.reduce(function (pr, pid) {
+        return pr.then(function () {
+          S.svc.busy = 'Фото ' + (++i) + ' из ' + ids.length; render();
+          return Promise.all([getPhotoBuf(pid, true), getPhotoBuf(pid, false)]).then(function (r) {
+            if (r[0] || r[1]) photos[pid] = { f: r[0] ? abToB64(r[0]) : '', t: r[1] ? abToB64(r[1]) : '' };
+          });
+        });
+      }, Promise.resolve()).then(function () {
+        if (withPh) data.photos = photos;
+        expBlob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+        var d = new Date(), ds = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+        S.svc.exp = { name: 'korobki-' + ds + (withPh ? '-s-foto' : '') + '.json', size: expBlob.size, missing: ids.length - Object.keys(photos).length };
+        S.svc.busy = ''; render();
+      }).catch(function () { S.svc.busy = ''; toast('Не удалось подготовить копию'); render(); });
+    }
+    function saveExp() {
+      if (!expBlob || !S.svc.exp) return;
+      var name = S.svc.exp.name, file = null;
+      try { file = new File([expBlob], name, { type: 'application/json' }); } catch (e) {}
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: name }).catch(function () {}); return; }
+      var a = document.createElement('a'); a.href = URL.createObjectURL(expBlob); a.download = name; sr.appendChild(a); a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+    }
+    function readImport(file) {
+      var fr = new FileReader();
+      fr.onload = function () {
+        try {
+          var d = JSON.parse(fr.result);
+          if (!d || d.app !== 'korobki' || !d.recs || typeof d.recs !== 'object') throw new Error('bad');
+          var n = Object.keys(d.recs).filter(function (id) { var r = d.recs[id]; return r && typeof r.id === 'string' && !r.d; }).length;
+          impData = d; S.svc.imp = { n: n, ph: d.photos ? Object.keys(d.photos).length : 0, date: d.created || '' };
+        } catch (e) { impData = null; S.svc.imp = null; toast('Это не файл копии «Коробок»'); }
+        render();
+      };
+      fr.readAsText(file);
+    }
+    function doImport() {
+      if (!impData) return;
+      var now = Date.now(), cnt = 0;
+      Object.keys(impData.recs).forEach(function (id) {
+        var r = impData.recs[id];
+        if (!r || typeof r.id !== 'string' || r.id !== id) return;
+        var x = norm(r); x.d = !!r.d; x.u = Math.max(now, (recs[id] ? recs[id].u + 1 : 0)); recs[id] = x; dirty[id] = 1; cnt++;
+      });
+      var ph = impData.photos || {};
+      Object.keys(ph).forEach(function (pid) {
+        if (!/^[0-9a-f]{16}$/.test(pid)) return;
+        try {
+          var full = ph[pid].f ? b64ToAb(ph[pid].f) : null, th = ph[pid].t ? b64ToAb(ph[pid].t) : null;
+          dbPut('photos', pid, { full: full || th, thumb: th || full, up: 0 });
+          if (upq.indexOf(pid) < 0) upq.push(pid);
+        } catch (e) {}
+      });
+      impData = null; S.svc.imp = null;
+      buildTree(); if (!dsince) dsince = now; persist(); renderSync(); scheduleSync(300);
+      toast('Восстановлено записей: ' + cnt); render();
+    }
+    function loadSvc() {
+      S.svc.stats = null; S.svc.statsErr = false;
+      try { if (navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(function (v) { S.svc.persisted = v; refreshSvc(); }); } catch (e) {}
+      try { if (navigator.storage && navigator.storage.estimate) navigator.storage.estimate().then(function (e) { S.svc.est = e; refreshSvc(); }); } catch (e) {}
+      call('GET', '/api/korobki/stats').then(function (r) { return r.json(); }).then(function (j) { S.svc.stats = j; refreshSvc(); }).catch(function () { S.svc.statsErr = true; refreshSvc(); });
+    }
+    function refreshSvc() { if (S.sheet && S.sheet.type === 'svc') render(); }
+    function doCleanup() {
+      S.svc.busy = 'Очищаю…'; render();
+      call('POST', '/api/korobki/cleanup', {}).then(function (r) { return r.json(); }).then(function (j) {
+        S.svc.busy = ''; toast('Удалено лишних фото: ' + j.removed + ' (' + mb(j.freed) + ')'); loadSvc(); render();
+      }).catch(function () { S.svc.busy = ''; toast('Нет связи с Home Assistant'); render(); });
+    }
+    function mb(b) { return b < 1048576 ? Math.max(1, Math.round(b / 1024)) + ' КБ' : (b / 1048576).toFixed(b < 10485760 ? 1 : 0) + ' МБ'; }
+    function svcHtml(head) {
+      var v = S.svc, st = v.stats, n = pendingCount(), tr = trashList().length;
+      var h = head('Сервис');
+      if (v.busy) h += '<div class="hint">' + esc(v.busy) + '</div>';
+      h += '<div class="sec">Синхронизация</div><div class="hint">' + (lastSync ? 'Последняя: ' + new Date(lastSync).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Ещё не было') +
+        (n ? '. Не отправлено: ' + n : '. Всё отправлено') + '</div>';
+      if (n && dsince && Date.now() - dsince > 2 * 86400000) h += '<div class="warn2">Правки не отправлялись ' + Math.floor((Date.now() - dsince) / 86400000) + ' дн. Подключитесь к сети и нажмите «Синхронизировать».</div>';
+      h += '<div class="actions"><button class="btn" data-sync>Синхронизировать</button><button class="btn" data-trash>Корзина' + (tr ? ' (' + tr + ')' : '') + '</button></div>';
+      h += '<div class="sec">Резервная копия</div><div class="hint">Файл со всеми местами, коробками, вещами и категориями. «С фото» файл больше. Фото, которых нет на устройстве, берутся с сервера.</div>' +
+        '<div class="actions"><button class="btn" data-export="0"' + (v.busy ? ' disabled' : '') + '>Скачать копию</button><button class="btn" data-export="1"' + (v.busy ? ' disabled' : '') + '>Копия с фото</button></div>';
+      if (v.exp) h += '<div class="svcrow"><div class="hint">Готово: ' + esc(v.exp.name) + ', ' + mb(v.exp.size) + (v.exp.missing ? '. Без фото: ' + v.exp.missing + ' (не нашлись)' : '') + '</div><button class="btn primary" data-saveexp>Сохранить файл</button></div>';
+      h += '<div class="sec">Восстановление</div><div class="hint">Записи из копии вернутся и заменят одноимённые. То, чего в копии нет, останется.</div>' +
+        '<div class="actions"><button class="btn" data-pickimp>Выбрать файл копии</button></div>';
+      if (v.imp) h += '<div class="svcrow"><div class="hint">В файле записей: ' + v.imp.n + (v.imp.ph ? ', фото: ' + v.imp.ph : '') + (v.imp.date ? ', от ' + esc(v.imp.date.slice(0, 10)) : '') + '</div><button class="btn danger ask" data-doimport>Восстановить</button></div>';
+      h += '<div class="sec">Хранилище на устройстве</div><div class="hint">' +
+        (v.persisted === true ? 'Защищено: система не удалит данные сама.' : v.persisted === false ? 'Система может очистить данные при нехватке места. Установите приложение на экран «Домой» и держите синхронизацию.' : 'Проверяю…') +
+        (v.est && v.est.usage != null ? ' Занято: ' + mb(v.est.usage) + '.' : '') + '</div>';
+      if (v.persisted === false) h += '<div class="actions"><button class="btn" data-persist>Запросить защиту</button></div>';
+      h += '<div class="sec">Фото на сервере</div>';
+      if (st) {
+        h += '<div class="hint">Фото: ' + st.photos + ', ' + mb(st.bytes) + (st.orphans ? '. Лишних: ' + st.orphans + ' (' + mb(st.orphan_bytes) + ')' : '. Лишних нет') + '</div>';
+        if (st.orphans) h += '<div class="actions"><button class="btn" data-cleanup' + (v.busy ? ' disabled' : '') + '>Удалить лишние фото</button></div>';
+      } else h += '<div class="hint">' + (v.statsErr ? 'Нет связи с Home Assistant.' : 'Загружаю…') + '</div>';
+      return h;
     }
 
     /* --- QR-этикетки --- */
@@ -632,8 +1117,14 @@
             return '<button type="button" data-type="' + t + '" class="' + (t === type ? 'on' : '') + '">' + TLABEL[t] + '</button>';
           }).join('') + '</div>';
         }
-        h += '<input id="fName" type="text" autocomplete="off" placeholder="' + HINT[type] + '" value="' + esc(S.draft) + '" aria-label="Название">';
-        if (type === 'item') h += '<label class="qrow" for="fQty">Количество <input id="fQty" type="number" min="1" value="1" inputmode="numeric"></label>';
+        if (type === 'item' && S.bulk) {
+          h += '<textarea class="field ta bulk" id="fBulk" rows="5" placeholder="Каждая вещь с новой строки.&#10;Количество: Шапки x4" aria-label="Список вещей">' + esc(S.draft) + '</textarea>';
+        } else {
+          h += '<input id="fName" type="text" autocomplete="off" placeholder="' + HINT[type] + '" value="' + esc(S.draft) + '" aria-label="Название">';
+          if (type === 'item') h += '<label class="qrow" for="fQty">Количество <input id="fQty" type="number" min="1" value="1" inputmode="numeric"></label>';
+        }
+        if (type === 'item') h += '<label class="tgl"><input type="checkbox" data-bulk' + (S.bulk ? ' checked' : '') + '> Списком, по одной вещи в строке</label>' +
+          '<label class="tgl"><input type="checkbox" data-keep' + (S.keep ? ' checked' : '') + '> Добавлять подряд, категории запоминаются</label>';
         if (type === 'item') h += addCatsHtml();
         h += '<div class="actions"><button class="btn primary" type="submit">Добавить</button><button class="btn" type="button" data-toggle-add>Отмена</button></div></form>';
       }
@@ -753,13 +1244,23 @@
           '<label class="sec" for="sNote">Пометка</label><textarea class="field ta" id="sNote" data-note="' + n.id + '" rows="2" placeholder="Срок годности, размер, где купили">' + esc(n.note || '') + '</textarea>' +
           '<div class="sec">Фото</div><div class="grid">' + thumbsHtml(n, true) + '</div>' +
           '<div class="actions"><button class="btn" data-qr="' + n.id + '">' + svg('qr', 18) + 'QR-этикетка</button>' +
+          '<button class="btn" data-move="' + n.id + '">Переместить</button><button class="btn" data-dup="' + n.id + '">Копировать</button>' +
           '<button class="btn danger' + (S.conf === n.id ? ' ask' : '') + '" data-del="' + n.id + '">' + (S.conf === n.id ? 'Точно удалить?' : 'Удалить') + '</button></div>';
       } else if (sh.type === 'node') {
         h += head(KIND[n.t]) +
           '<input class="field big" id="sName" data-rename="' + n.id + '" value="' + esc(n.n) + '" aria-label="Название">' +
           '<div class="hint">' + (n.t === 'home' ? 'Название дома или квартиры. Показывается вверху и в пути.' : esc(namesTo(n.id).join(' › '))) + '</div>' +
           (n.t === 'home' ? '' : '<div class="actions"><button class="btn" data-qr="' + n.id + '">' + svg('qr', 18) + 'QR-этикетка</button>' +
+            '<button class="btn" data-move="' + n.id + '">Переместить</button><button class="btn" data-dup="' + n.id + '">Копировать</button>' +
             '<button class="btn danger' + (S.conf === n.id ? ' ask' : '') + '" data-del="' + n.id + '">' + (S.conf === n.id ? 'Точно удалить?' : 'Удалить') + '</button></div>');
+      } else if (sh.type === 'svc') {
+        h += svcHtml(head);
+      } else if (sh.type === 'move') {
+        var tg = moveTargets(n);
+        h += head('Переместить') + '<div class="hint">Что: ' + esc(n.n) + '. Куда переложить:</div>' +
+          (tg.length ? tg.map(function (t) {
+            return '<button class="mrow" data-moveto="' + t.node.id + '"' + (t.cur ? ' disabled' : '') + '>' + esc(t.path.join(' › ')) + (t.cur ? '<span class="sub">сейчас здесь</span>' : '') + '</button>';
+          }).join('') : '<div class="empty">Некуда перекладывать.</div>');
       } else if (sh.type === 'qr') {
         h += head('QR-этикетка') +
           '<img class="labimg" alt="Этикетка: ' + esc(n.n) + '" src="' + labelImage([n]) + '">' +
@@ -783,23 +1284,51 @@
     }
 
     function renderFoot() {
-      $('foot').innerHTML = '<span>Данные и фото хранятся в Home Assistant · v' + VERSION + '</span><span>' + esc(statusText) + '</span>';
+      var f = $('foot'); if (!f) return;
+      var t = lastSync ? 'Синхронизировано в ' + new Date(lastSync).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+      f.innerHTML = '<span>Данные хранятся в Home Assistant · v' + VERSION + (memOnly ? ' · без сохранения на устройстве' : '') + '</span><span>' + esc(t) + '</span>' +
+        '<span class="fb"><button data-trash>Корзина' + (trashList().length ? ' (' + trashList().length + ')' : '') + '</button><button data-svc>Сервис</button><button data-sync>Синхронизировать</button>' + (env.logout ? '<button data-logout>Выйти</button>' : '') + '</span>';
+    }
+    function renderSync() {
+      var b = $('syncbar'); if (!b) return;
+      var n = pendingCount(), html = '', st = '#42a5f5';
+      var oldMs = dsince && n ? Date.now() - dsince : 0, days = Math.floor(oldMs / 86400000);
+      if (net === 'auth') {
+        st = '#e53935';
+        html = '<span>Нет доступа к Home Assistant. ' + (env.reauth ? 'Введите токен заново.' : 'Войдите в Home Assistant заново.') + '</span>' + (env.reauth ? '<button class="mini2" data-reauth>Токен</button>' : '');
+      } else if (net === 'offline') {
+        st = '#ffa000';
+        html = '<span>' + (n ? 'Нет связи. Изменения сохранены на устройстве: ' + n + '.' + (days >= 2 ? ' Не отправляются уже ' + days + ' дн., подключитесь к сети.' : '') : 'Нет связи. Приложение работает без сети.') + '</span><button class="mini2" data-sync>Повторить</button>';
+        if (days >= 2) st = '#e53935';
+      } else if (net === 'sync') {
+        html = '<span>Синхронизация…</span>';
+      } else if (n) {
+        if (days >= 2) st = '#e53935';
+        html = '<span>Ожидает отправки: ' + n + (days >= 2 ? '. Не уходит уже ' + days + ' дн.' : '') + '</span><button class="mini2" data-sync>Отправить</button>';
+      }
+      b.hidden = !html; b.style.setProperty('--st', st); b.innerHTML = html;
     }
     function render() {
       if (destroyed) return;
-      $('menu').hidden = !narrow;
-      if (S.error) {
-        $('crumbs').innerHTML = '<span class="cur">Коробки</span>';
-        $('view').innerHTML = '<div class="head"><h1>Нет связи с интеграцией</h1></div><div class="empty">' + esc(S.error) + '</div>';
+      $('menu').hidden = !(narrow && env.kind === 'panel');
+      if (!loaded) { $('view').innerHTML = '<div class="head"><h1>Коробки</h1><div class="stat">Загружаю…</div></div>'; return; }
+      if (!everSynced) {
+        $('crumbs').innerHTML = ''; $('back').hidden = true;
+        $('view').innerHTML = '<div class="head"><h1>Коробки</h1><div class="stat">' + (net === 'offline' ? 'Нет связи с Home Assistant' : net === 'auth' ? 'Нет доступа' : 'Загружаю данные…') + '</div></div>' +
+          '<div class="empty"><div>При первом запуске нужна связь с Home Assistant: данные скачиваются на устройство. Дальше приложение работает и без сети.</div><button class="btn" data-sync>Повторить</button></div>';
+        renderFoot(); renderSync();
         return;
       }
-      if (!loaded) { $('view').innerHTML = '<div class="head"><h1>Коробки</h1><div class="stat">Загружаю…</div></div>'; return; }
       var T = trail(), searching = S.q.trim() !== '';
+      var finding = S.mode === 'find', onCats = (S.mode === 'cats' || S.mode === 'cat') && !searching;
       $('back').hidden = !(S.path.length || S.mode || searching);
-      $('catsBtn').classList.toggle('on', !!S.mode);
-      if (S.mode && !searching) {
+      $('bnav').hidden = !(S.path.length || S.mode || searching);
+      $('catsBtn').hidden = onCats;
+      $('catsBtn').classList.toggle('on', S.mode === 'cats' || S.mode === 'cat');
+      $('filtBtn').classList.toggle('on', finding);
+      if (S.mode && (!searching || finding)) {
         var cc = S.mode === 'cat' ? catById(S.catId) : null;
-        $('crumbs').innerHTML = cc
+        $('crumbs').innerHTML = S.mode === 'trash' ? '<span class="cur">Корзина</span>' : finding ? '<span class="cur">Фильтры</span>' : cc
           ? '<button class="crumb" data-catsroot>Категории</button><span class="chev">' + svg('chev', 14) + '</span><span class="cur">#' + esc(cc.n) + '</span>'
           : '<span class="cur">Категории</span>';
       } else {
@@ -810,8 +1339,8 @@
       }
       var crEl = $('crumbs'); crEl.scrollLeft = crEl.scrollWidth;
       var banner = S.stale ? '<div class="banner"><span>Вышла новая версия панели.</span><button class="btn primary" data-reload style="--a:var(--accent);height:34px">Обновить</button></div>' : '';
-      $('view').innerHTML = banner + (searching ? searchView() : S.mode === 'cats' ? catsView() : S.mode === 'cat' ? catView() : normalView(T));
-      renderFoot();
+      $('view').innerHTML = banner + ((searching || finding) ? findView() : S.mode === 'cats' ? catsView() : S.mode === 'cat' ? catView() : S.mode === 'trash' ? trashView() : normalView(T));
+      renderFoot(); renderSync();
       var sh = $('sheet'), html = sheetHtml();
       sh.innerHTML = html; sh.hidden = !html;
       if (S.focus) { var f = $('fName'); if (f) f.focus(); S.focus = false; }
@@ -829,15 +1358,17 @@
       if (S.q.trim()) { clearSearch(); render(); return; }
       S.adding = false; S.edit = false; S.conf = null;
       if (S.mode === 'cat') { S.mode = 'cats'; render(); toTop(); return; }
-      if (S.mode === 'cats') { S.mode = null; render(); toTop(); return; }
+      if (S.mode === 'cats' || S.mode === 'trash' || S.mode === 'find') { S.mode = null; render(); toTop(); return; }
       if (S.path.length) { S.path.pop(); render(); toTop(); }
+    }
+    function goHome() {
+      S.sheet = null; S.mode = null; S.path = []; S.adding = false; S.edit = false; S.conf = null; clearSearch(); render(); toTop();
     }
     function closeSheet() { S.sheet = S.sheet && S.sheet.back ? S.sheet.back : null; S.conf = null; render(); }
 
     function doDelete(id) {
       var n = findNode(root, id);
       if (!n) return;
-      collectPhotos(n, []).forEach(dropPhoto);
       removeNode(root, id);
       S.sheet = null; save();
     }
@@ -874,7 +1405,31 @@
 
       if (q('#menu')) { host.dispatchEvent(new CustomEvent('hass-toggle-menu', { bubbles: true, composed: true })); return; }
       if (q('[data-close]')) { closeSheet(); return; }
-      if (q('#back')) { goBack(); return; }
+      if (q('#back') || q('[data-goback]')) { goBack(); return; }
+      if (q('[data-home]')) { goHome(); return; }
+      if (q('#filtBtn')) { S.mode = S.mode === 'find' ? null : 'find'; S.adding = false; S.edit = false; S.conf = null; render(); toTop(); return; }
+      if (q('[data-trash]')) { S.sheet = null; S.mode = 'trash'; S.adding = false; S.edit = false; S.conf = null; clearSearch(); render(); toTop(); return; }
+      if (q('[data-svc]')) { S.sheet = { type: 'svc', id: 'root', back: null }; S.conf = null; render(); loadSvc(); return; }
+      if ((el = q('[data-emptytrash]'))) { if (S.conf === 'emptytrash') { emptyTrash(); S.conf = null; toast('Корзина очищена'); } else S.conf = 'emptytrash'; render(); return; }
+      if ((el = q('[data-restore]'))) { var rn = recs[el.getAttribute('data-restore')]; restoreRec(el.getAttribute('data-restore')); toast('Возвращено: ' + (rn ? rn.n : '')); render(); return; }
+      if (q('[data-export]')) { doExport(q('[data-export]').getAttribute('data-export') === '1'); return; }
+      if (q('[data-saveexp]')) { saveExp(); return; }
+      if (q('[data-pickimp]')) { $('impick').click(); return; }
+      if (q('[data-doimport]')) { doImport(); return; }
+      if (q('[data-cleanup]')) { doCleanup(); return; }
+      if (q('[data-persist]')) { requestPersist(); setTimeout(loadSvc, 600); return; }
+      if ((el = q('[data-move]'))) { S.sheet = { type: 'move', id: el.getAttribute('data-move'), back: S.sheet }; render(); return; }
+      if ((el = q('[data-moveto]'))) { if (S.sheet) doMove(S.sheet.id, el.getAttribute('data-moveto')); return; }
+      if ((el = q('[data-dup]'))) { doDup(el.getAttribute('data-dup')); return; }
+      if ((el = q('[data-fcat]'))) { var fc = el.getAttribute('data-fcat'), fi = S.f.cats.indexOf(fc); if (fi > -1) S.f.cats.splice(fi, 1); else { S.f.cats.push(fc); S.f.nocat = false; } render(); return; }
+      if (q('[data-fnocat]')) { S.f.nocat = !S.f.nocat; if (S.f.nocat) S.f.cats = []; render(); return; }
+      if (q('[data-fnophoto]')) { S.f.nophoto = !S.f.nophoto; render(); return; }
+      if (q('[data-freset]')) { S.f = { cats: [], nocat: false, nophoto: false, sort: 'path' }; render(); return; }
+      if ((el = q('[data-bulk]'))) { var bf = $('fName') || $('fBulk'), bc = $('fNewCat'); S.draft = bf ? bf.value : ''; S.draftCat = bc ? bc.value : ''; S.bulk = el.checked; S.focus = true; render(); return; }
+      if ((el = q('[data-keep]'))) { S.keep = el.checked; return; }
+      if (q('[data-sync]')) { sync(); return; }
+      if (q('[data-reauth]') && env.reauth) { env.reauth(); return; }
+      if (q('[data-logout]') && env.logout) { env.logout(); return; }
       if (q('#catsBtn')) { S.mode = 'cats'; S.catId = null; S.edit = false; S.adding = false; S.conf = null; clearSearch(); render(); toTop(); return; }
       if (q('[data-reload]')) { location.reload(); return; }
       if ((el = q('[data-addtag]'))) {
@@ -900,7 +1455,14 @@
       }
       if ((el = q('[data-del]'))) {
         var id = el.getAttribute('data-del');
-        if (S.conf === id) { doDelete(id); S.conf = null; } else S.conf = id;
+        if (S.conf === id) { doDelete(id); S.conf = null; toast('Перенесено в корзину'); }
+        else {
+          S.conf = id;
+          var dn = findNode(root, id), ds = dn && dn.t !== 'item' ? stats(dn) : null, dp = [];
+          if (ds && ds.b) dp.push(pl(ds.b, W.box));
+          if (ds && ds.i) dp.push(pl(ds.i, W.item));
+          toast(dp.length ? 'Вместе с этим удалится: ' + dp.join(', ') + '. Вернуть можно из корзины.' : 'Нажмите ещё раз. Вернуть можно из корзины.');
+        }
         render(); return;
       }
       if ((el = q('[data-delphoto]'))) {
@@ -951,7 +1513,7 @@
       } else if (q('[data-toggle-edit]')) {
         S.edit = !S.edit; render();
       } else if ((el = q('[data-type]'))) {
-        var f = $('fName'), fc = $('fNewCat'); S.draft = f ? f.value : ''; S.draftCat = fc ? fc.value : ''; S.addType = el.getAttribute('data-type'); S.focus = true; render();
+        var f = $('fName') || $('fBulk'), fc = $('fNewCat'); S.draft = f ? f.value : ''; S.draftCat = fc ? fc.value : ''; S.addType = el.getAttribute('data-type'); S.focus = true; render();
       } else if (hadConf) {
         render();
       }
@@ -975,6 +1537,11 @@
       } else if (t.matches && t.matches('[data-catname]')) {
         var cat = catById(t.getAttribute('data-catname')), cv = t.value.replace(/^#+/, '').trim();
         if (cat && cv) { cat.n = cv; save(); }
+      } else if (t.matches && t.matches('[data-fsort]')) {
+        S.f.sort = t.value; render();
+      } else if (t.id === 'impick') {
+        if (t.files && t.files[0]) readImport(t.files[0]);
+        t.value = '';
       } else if (t.id === 'baseUrl') {
         settings.base = t.value.trim(); save(); render();
       }
@@ -1000,23 +1567,38 @@
       e.preventDefault();
       var T = trail(), cur = T.cur, allowed = ALLOW[cur.t];
       var type = S.addType && allowed.indexOf(S.addType) > -1 ? S.addType : allowed[0];
-      var name = $('fName').value.trim();
-      if (!name) { $('fName').focus(); return; }
-      var node = type === 'item'
-        ? I(name, Math.max(1, parseInt(($('fQty') || {}).value, 10) || 1))
-        : (type === 'place' ? P(name, null, []) : B(name, []));
-      if (type === 'place') {
-        var pal = ['#ffc107', '#03a9f4', '#9c27b0', '#f44336', '#4caf50', '#00bcd4', '#ff7043'];
-        node.c = pal[cur.ch.length % pal.length];
+      var nodes = [];
+      if (type === 'item' && S.bulk) {
+        var bx = $('fBulk');
+        (bx.value || '').split(/\n+/).forEach(function (line) {
+          line = line.trim(); if (!line) return;
+          var m = /^(.*?)(?:\s+[xXхХ*]|\s*×)\s*(\d{1,4})$/.exec(line);
+          if (m && m[1].trim()) nodes.push(I(m[1].trim(), Math.max(1, parseInt(m[2], 10))));
+          else nodes.push(I(line, 1));
+        });
+        if (!nodes.length) { bx.focus(); return; }
+      } else {
+        var name = $('fName').value.trim();
+        if (!name) { $('fName').focus(); return; }
+        var node = type === 'item'
+          ? I(name, Math.max(1, parseInt(($('fQty') || {}).value, 10) || 1))
+          : (type === 'place' ? P(name, null, []) : B(name, []));
+        if (type === 'place') {
+          var pal = ['#ffc107', '#03a9f4', '#9c27b0', '#f44336', '#4caf50', '#00bcd4', '#ff7043'];
+          node.c = pal[cur.ch.length % pal.length];
+        }
+        nodes.push(node);
       }
       if (type === 'item') {
         var tags = S.addTags.filter(function (t) { return catById(t); });
         var fresh = addCat(($('fNewCat') || {}).value);
         if (fresh && tags.indexOf(fresh.id) < 0) tags.push(fresh.id);
-        node.tg = tags;
+        nodes.forEach(function (nd) { nd.tg = tags.slice(); });
+        S.addTags = S.keep ? tags : [];
       }
-      cur.ch.push(node);
-      S.adding = false; S.draft = ''; S.draftCat = ''; S.addTags = []; S.addType = null;
+      nodes.forEach(function (nd) { cur.ch.push(nd); });
+      if (type === 'item' && S.keep) { S.draft = ''; S.draftCat = ''; S.focus = true; toast('Добавлено: ' + nodes.length); }
+      else { S.adding = false; S.draft = ''; S.draftCat = ''; S.addTags = []; S.addType = null; }
       save(); render();
     });
 
@@ -1026,14 +1608,13 @@
       if (!node || !files.length) return;
       files = files.slice(0, Math.max(0, MAXPH - (node.ph || []).length));
       if (!files.length) { toast('К одной позиции можно добавить до ' + MAXPH + ' фото'); return; }
-      setStatus('Загружаю фото…');
       var pending = files.length, failed = 0;
       files.forEach(function (f) {
-        uploadPhoto(f).then(function (pid) {
+        addPhotoLocal(f).then(function (pid) {
           if (pid) node.ph = (node.ph || []).concat(pid); else failed++;
           if (--pending === 0) {
-            if (failed) toast('Не удалось загрузить фото: ' + failed);
-            setStatus(''); save(); render();
+            if (failed) toast('Не удалось обработать фото: ' + failed);
+            save(); render();
           }
         });
       });
@@ -1042,32 +1623,70 @@
     $('q').addEventListener('input', function () { S.q = this.value; S.conf = null; render(); });
 
     function onVisible() {
-      if (document.hidden) { if (dirty) flush(); }
-      else if (loaded && !dirty && !inflight) load();
+      if (document.hidden) doPersist(); else scheduleSync(200);
     }
+    function onOnline() { scheduleSync(300); }
+    function onOffline() { net = 'offline'; renderSync(); }
     document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+    window.addEventListener('pagehide', doPersist);
 
-    /* --- запуск --- */
-    render();
-    load().then(function () {
-      try {
-        var conn = getHass().connection;
-        if (conn && conn.subscribeEvents) {
-          conn.subscribeEvents(function (ev) {
-            if (ev && ev.data && ev.data.rev > rev && !dirty && !inflight) load();
-          }, 'korobki_updated').then(function (u) { if (destroyed) u(); else unsub = u; }).catch(function () {});
+    /* --- запуск: сначала данные с устройства, потом синхронизация --- */
+    function afterDb() {
+      if (booted) return;
+      booted = true; clearTimeout(bootT);
+      dbGet('kv', 'state', function (st) {
+        if (st && st.recs) {
+          recs = st.recs; dirty = {};
+          (st.dirty || []).forEach(function (i) { dirty[i] = 1; });
+          upq = st.upq || []; delq = st.delq || []; since = st.since || 0; device = st.device || ''; everSynced = !!st.synced; dsince = st.dsince || 0;
         }
-      } catch (e) {}
-    });
+        if (!device) device = uid() + uid();
+        buildTree(); loaded = true; render(); requestPersist();
+        if (pendingRoute) { var pr = pendingRoute; pendingRoute = null; applyRoute(pr, true); }
+        sync();
+        pollT = setInterval(function () { if (!document.hidden) sync(); }, env.kind === 'pwa' ? 45000 : 90000);
+        if (env.subscribe) {
+          try { env.subscribe(function () { scheduleSync(300); }).then(function (u) { if (destroyed) u(); else unsub = u; }).catch(function () {}); } catch (e) {}
+        }
+      });
+    }
+    render();
+    var bootT = setTimeout(function () { memOnly = true; afterDb(); }, 3000);
+    dbOpen(function (ok) { if (!ok) memOnly = true; afterDb(); });
 
     return {
       setNarrow: function (v) { narrow = !!v; render(); },
       route: function (r) { applyRoute(r, false); },
       destroy: function () {
-        destroyed = true; clearTimeout(saveTimer);
+        destroyed = true; clearTimeout(syncT); clearTimeout(bootT); clearInterval(pollT);
         document.removeEventListener('visibilitychange', onVisible);
+        window.removeEventListener('online', onOnline);
+        window.removeEventListener('offline', onOffline);
+        window.removeEventListener('pagehide', doPersist);
         if (unsub) { try { unsub(); } catch (e) {} }
-        if (dirty) { try { getHass().callWS({ type: 'korobki/save', rev: rev, root: root, settings: settings }); } catch (e) {} }
+        doPersist();
+      }
+    };
+  }
+
+  /* ---------- Подключение к Home Assistant из панели ---------- */
+  function hassEnv(getHass) {
+    return {
+      kind: 'panel',
+      request: function (method, path, body, type, signal) {
+        var init = { method: method, headers: {} };
+        if (signal) init.signal = signal;
+        if (body != null) {
+          if (typeof Blob !== 'undefined' && body instanceof Blob) { init.body = body; init.headers['Content-Type'] = type || 'image/jpeg'; }
+          else { init.body = JSON.stringify(body); init.headers['Content-Type'] = 'application/json'; }
+        }
+        return getHass().fetchWithAuth(path, init);
+      },
+      subscribe: function (cb) {
+        var c = getHass().connection;
+        return c && c.subscribeEvents ? c.subscribeEvents(function () { cb(); }, 'korobki_updated') : Promise.resolve(function () {});
       }
     };
   }
@@ -1076,22 +1695,24 @@
   class KorobkiPanel extends HTMLElement {
     constructor() {
       super();
-      this._hass = null; this._narrow = false; this._route = null; this._api = null;
+      this._hass = null; this._narrow = false; this._route = null; this._api = null; this._transport = null;
       this.attachShadow({ mode: 'open' });
     }
     set hass(h) {
       var first = !this._hass;
       this._hass = h;
-      if (first) this._boot();
+      if (first && !this._transport && !this._api) this._boot();
     }
     get hass() { return this._hass; }
+    set transport(t) { this._transport = t; if (!this._api) this._boot(); }
     set narrow(v) { this._narrow = !!v; if (this._api) this._api.setNarrow(this._narrow); }
     set route(r) { this._route = r; if (this._api) this._api.route(r); }
     set panel(p) { this._panel = p; }
     _boot() {
       var self = this;
       this.shadowRoot.innerHTML = HTML;
-      this._api = createApp(this, this.shadowRoot, function () { return self._hass; });
+      var env = this._transport || hassEnv(function () { return self._hass; });
+      this._api = createApp(this, this.shadowRoot, env);
       if (this._narrow) this._api.setNarrow(true);
       if (this._route) this._api.route(this._route);
     }
