@@ -1,0 +1,30 @@
+# Автоматический релиз: при загрузке в main читает version из manifest.json
+# и создаёт релиз с таким тегом, если его ещё нет. HACS увидит новую версию.
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - custom_components/korobki/manifest.json
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create release if version is new
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(python3 -c "import json; print(json.load(open('custom_components/korobki/manifest.json'))['version'])")
+          echo "Версия в manifest.json: $VERSION"
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            echo "Релиз $VERSION уже есть, ничего не делаю."
+          else
+            gh release create "$VERSION" --target "$GITHUB_SHA" --title "$VERSION" --generate-notes
+          fi
