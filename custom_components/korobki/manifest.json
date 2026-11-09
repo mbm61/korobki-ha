@@ -1,7 +1,7 @@
 {
   "domain": "korobki",
   "name": "Коробки",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "documentation": "https://github.com/mbm61/korobki-ha",
   "issue_tracker": "https://github.com/mbm61/korobki-ha/issues",
   "codeowners": [

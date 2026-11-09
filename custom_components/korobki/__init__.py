@@ -51,6 +51,16 @@ INTENT_FIND = "KorobkiFind"
 CONFIG_SCHEMA = cv.empty_config_schema(DOMAIN)
 
 
+class _KorobkiStore(Store):
+    """Хранилище, которое принимает данные любой прежней версии (старое дерево 0.3.0 и новые записи).
+
+    Преобразование в плоские записи делает _migrate, здесь данные отдаются как есть.
+    """
+
+    async def _async_migrate_func(self, old_major_version, old_minor_version, old_data):
+        return old_data
+
+
 def _migrate(data: dict) -> dict:
     """Старый формат (дерево root + settings) превращается в плоский список записей."""
     if "recs" in data:
@@ -93,7 +103,7 @@ def _migrate(data: dict) -> dict:
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Запуск интеграции."""
-    store: Store = Store(hass, STORAGE_VERSION, DOMAIN)
+    store: Store = _KorobkiStore(hass, STORAGE_VERSION, DOMAIN)
     data = _migrate(await store.async_load() or {})
     if data["rev"] and "migrated" not in data:
         await store.async_save(data)
