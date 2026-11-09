@@ -131,6 +131,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     hass.http.register_view(PhotoThumbView(hass, photo_dir))
 
     base = Path(__file__).parent
+    # адрес папки /korobki_app/ без имени файла статика отдаёт как 403, поэтому страницу отдаёт отдельный обработчик
+    hass.http.register_view(AppIndexView(hass, base / "app" / "index.html"))
     await hass.http.async_register_static_paths(
         [
             StaticPathConfig(STATIC_URL, str(base / "frontend" / "korobki-panel.js"), False),
@@ -362,6 +364,29 @@ def _write_sentences(folder: Path) -> None:
         if not target.exists():
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(text, encoding="utf-8")
+
+
+# ---------- страница приложения ----------
+
+
+class AppIndexView(HomeAssistantView):
+    """GET /korobki_app/ (и без слэша): страница установленного приложения. Без входа, как и сами файлы приложения."""
+
+    url = "/korobki_app/"
+    extra_urls = ["/korobki_app"]
+    name = "korobki:app"
+    requires_auth = False
+
+    def __init__(self, hass: HomeAssistant, index: Path) -> None:
+        self._hass = hass
+        self._index = index
+
+    async def get(self, request: web.Request) -> web.Response:
+        body = await self._hass.async_add_executor_job(self._index.read_bytes)
+        return web.Response(
+            body=body, content_type="text/html", charset="utf-8",
+            headers={"Cache-Control": "no-cache"},
+        )
 
 
 # ---------- синхронизация ----------
