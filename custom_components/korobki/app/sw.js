@@ -1,5 +1,5 @@
 /* Сервис-воркер: приложение открывается без сети. Код берётся из кэша и обновляется в фоне. */
-var CACHE = 'korobki-app-v3';
+var CACHE = 'korobki-app-v4';
 var SHELL = ['/korobki_app/', '/korobki_app/index.html', '/korobki_app/manifest.json', '/korobki_app/apple-touch-icon.png', '/korobki_static/korobki-panel.js'];
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return Promise.all(SHELL.map(function (u) { return c.add(u).catch(function () {}); })); }).then(function () { return self.skipWaiting(); }));
