@@ -10,18 +10,30 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Коробки</title>
+<script>try { var th = localStorage.getItem('korobki-theme'); if (th === 'light' || th === 'dark') document.documentElement.setAttribute('data-theme', th); } catch (e) {}</script>
 <style>
-  :root { --bg:#fff; --fg:#1c1c1c; --muted:#6b6b6b; --card:#f4f4f4; --line:#d9d9d9; --acc:#ffc107; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#111; --fg:#eee; --muted:#9a9a9a; --card:#1d1d1d; --line:#333; } }
-  html, body { margin:0; height:100%; background:var(--bg); color:var(--fg); font:15px -apple-system, system-ui, sans-serif; }
-  korobki-panel { display:block; height:100%; }
-  #login { box-sizing:border-box; max-width:460px; margin:0 auto; padding:max(24px, env(safe-area-inset-top)) 20px 24px; display:flex; flex-direction:column; gap:12px; }
+  /* Переменные названы как в Home Assistant: панель берёт цвета отсюда (наследуются в shadow DOM) */
+  :root { color-scheme: light dark;
+    --primary-background-color:#f2f4f8; --card-background-color:#fff; --primary-text-color:#16202c; --secondary-text-color:#64738a;
+    --divider-color:#d9e0ea; --primary-color:#4f729f; --error-color:#c62828; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --primary-background-color:#111418; --card-background-color:#1c2128; --primary-text-color:#e6e9ee; --secondary-text-color:#9aa4b2;
+    --divider-color:#2c333d; --primary-color:#6f9bd1; --error-color:#ef5350; } }
+  :root[data-theme="dark"] { color-scheme: dark;
+    --primary-background-color:#111418; --card-background-color:#1c2128; --primary-text-color:#e6e9ee; --secondary-text-color:#9aa4b2;
+    --divider-color:#2c333d; --primary-color:#6f9bd1; --error-color:#ef5350; }
+  :root[data-theme="light"] { color-scheme: light; }
+  /* Документ не прокручивается: прокручивается только панель. Так iOS не оставляет пустую полосу после клавиатуры */
+  html, body { margin:0; position:fixed; inset:0; width:100%; height:100%; overflow:hidden; overscroll-behavior:none;
+    background:var(--primary-background-color); color:var(--primary-text-color); font:15px -apple-system, system-ui, sans-serif; }
+  korobki-panel { display:block; position:fixed; inset:0; }
+  #login { box-sizing:border-box; max-width:460px; margin:0 auto; padding:max(24px, calc(env(safe-area-inset-top) + 16px)) 20px 24px; display:flex; flex-direction:column; gap:12px; }
   #login[hidden] { display:none; }
   #login h1 { margin:8px 0 0; }
-  #login p { margin:0; color:var(--muted); line-height:1.4; }
-  #login input, #login button { font:inherit; padding:12px; border-radius:12px; border:1px solid var(--line); background:var(--card); color:var(--fg); }
-  #login button { background:var(--acc); color:#222; font-weight:600; border:0; }
-  #err { color:#e53935; min-height:1.2em; }
+  #login p { margin:0; color:var(--secondary-text-color); line-height:1.4; }
+  #login input, #login button { font:inherit; padding:12px; border-radius:12px; border:1px solid var(--divider-color); background:var(--card-background-color); color:var(--primary-text-color); }
+  #login button { background:#ffc107; color:#222; font-weight:600; border:0; }
+  #err { color:var(--error-color); min-height:1.2em; }
 </style></head><body>
 <form id="login" hidden>
   <h1>Коробки</h1>
@@ -53,6 +65,13 @@
       document.body.appendChild(el);
       el.transport = {
         kind: 'pwa', request: req,
+        theme: function (v) {
+          var cur = 'auto';
+          try { cur = localStorage.getItem('korobki-theme') || 'auto'; } catch (e) {}
+          if (v === undefined) return cur;
+          try { if (v === 'auto') localStorage.removeItem('korobki-theme'); else localStorage.setItem('korobki-theme', v); } catch (e) {}
+          if (v === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', v);
+        },
         reauth: function () { el.remove(); login.hidden = false; },
         logout: function () { try { localStorage.removeItem(KEY); } catch (e) {} location.reload(); }
       };
@@ -73,6 +92,15 @@
       start();
     }).catch(function (x) { tok = old; err.textContent = x.message === 'Failed to fetch' ? 'Нет связи с Home Assistant' : x.message; });
   });
+  /* iOS после клавиатуры иногда оставляет страницу сдвинутой (снизу чёрная/белая полоса): возвращаем в 0 */
+  function unshift() {
+    var ae = document.activeElement, deep = ae && ae.shadowRoot ? ae.shadowRoot.activeElement : ae;
+    if (deep && /^(INPUT|TEXTAREA|SELECT)$/.test(deep.tagName)) return;
+    window.scrollTo(0, 0); document.documentElement.scrollTop = 0; document.body.scrollTop = 0;
+  }
+  document.addEventListener('focusout', function () { setTimeout(unshift, 60); setTimeout(unshift, 350); }, true);
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', function () { setTimeout(unshift, 60); });
+  window.addEventListener('orientationchange', function () { setTimeout(unshift, 300); });
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
 })();
 </script></body></html>
