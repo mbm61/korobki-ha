@@ -263,6 +263,13 @@
     '.mini2 { flex: none; height: 30px; padding: 0 12px; border-radius: 10px; font-size: 13px; font-weight: 600; border: 1px solid var(--line); background: var(--card); }',
     '.foot button { background: none; border: 0; padding: 6px 0; font-size: 12px; color: var(--muted); text-decoration: underline; }',
     '.fb { display: inline-flex; gap: 14px; }',
+    '.iconbtn.net { position: relative; color: var(--st, #43a047); border-color: color-mix(in srgb, var(--st, #43a047) 50%, transparent); background: color-mix(in srgb, var(--st, #43a047) 14%, var(--card)); }',
+    '.net.spin svg { animation: spin 1s linear infinite; }',
+    '@keyframes spin { to { transform: rotate(360deg); } }',
+    '.nbadge { position: absolute; right: -4px; top: -5px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--st); color: #fff; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }',
+    '.grab { width: 40px; height: 5px; border-radius: 3px; background: color-mix(in srgb, var(--fg) 25%, transparent); margin: -6px auto 2px; }',
+    '.panel { touch-action: pan-y; }',
+    '.strip .th { width: 60px; height: 60px; }',
     '.pill[hidden], .bnav[hidden], .iconbtn[hidden], .foot[hidden], .ddlist[hidden] { display: none; }',
     /* кнопки-иконки под палец */
     '.ib { min-width: 46px; height: 46px; padding: 0; flex: none; border-radius: 14px; border: 1px solid var(--line); background: var(--card); color: var(--fg); display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 14px; font-weight: 600; }',
@@ -345,10 +352,11 @@
     '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>' +
     '<input id="q" type="search" placeholder="Поиск вещей" autocomplete="off"></label>' +
     '<button class="iconbtn" id="filtBtn" aria-label="Фильтры" title="Фильтры"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16l-6 7.5V19l-4-2v-4.5Z"/></svg></button>' +
-    '<button class="iconbtn" id="catsBtn" aria-label="Категории" title="Категории"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M9 4 7 20M17 4l-2 16M4 9h16M3.5 15h16"/></svg></button></div>' +
+    '<button class="iconbtn" id="catsBtn" aria-label="Категории" title="Категории"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M9 4 7 20M17 4l-2 16M4 9h16M3.5 15h16"/></svg></button>' +
+    '<button class="iconbtn net" id="netBtn" aria-label="Состояние связи"></button></div>' +
     '<div class="toprow"><button class="menu" id="back" hidden aria-label="Назад"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>' +
     '<nav class="crumbs" id="crumbs" aria-label="Путь"></nav></div>' +
-    '<div class="syncbar" id="syncbar" hidden></div></header>' +
+    '</header>' +
     '<main id="view"></main><footer class="foot" id="foot"></footer>' +
     '<nav class="bnav" id="bnav" hidden aria-label="Навигация"><button data-home aria-label="В корень дома"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7M6 10v10h12V10"/></svg>Домой</button>' +
     '<button data-goback aria-label="Назад"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Назад</button></nav></div>' +
@@ -386,7 +394,7 @@
     var net = 'idle', lastSync = 0, syncing = null, again = false;
     var persistT = null, syncT = null, pollT = null, unsub = null;
     var narrow = false, pendingRoute = null, lastRoutePath = null, dsince = 0, expBlob = null, impData = null;
-    var S = { mode: null, catId: null, stale: false, path: [], q: '', adding: false, addType: null, draft: '', edit: false, conf: null, focus: false, addTags: [], dd: false, draftCat: '', sheet: null, pick: null, error: '', bulk: false, keep: false, f: { cats: [], nocat: false, nophoto: false, sort: 'path' }, svc: { stats: null, est: null, persisted: null, busy: '', exp: null, imp: null } };
+    var S = { mode: null, catId: null, stale: false, path: [], q: '', adding: false, addType: null, draft: '', edit: false, conf: null, focus: false, addTags: [], dd: false, sdd: null, draftCat: '', sheet: null, pick: null, error: '', bulk: false, keep: false, f: { cats: [], nocat: false, nophoto: false, sort: 'path' }, svc: { stats: null, est: null, persisted: null, busy: '', exp: null, imp: null } };
 
     function normSettings(x) {
       var o = Object.assign({ qr: 'app', base: '', cats: [] }, x || {});
@@ -416,7 +424,13 @@
       copy: '<rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
       trash: '<path d="M4 7h16M10 3.5h4M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/>',
       check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
-      chevd: '<path d="m6 9 6 6 6-6"/>'
+      chevd: '<path d="m6 9 6 6 6-6"/>',
+      cloud: '<path d="M7 18.5h10a4 4 0 0 0 .7-7.9A5.6 5.6 0 0 0 6.9 9.4 4.6 4.6 0 0 0 7 18.5Z"/>',
+      cloudok: '<path d="M7 18.5h10a4 4 0 0 0 .7-7.9A5.6 5.6 0 0 0 6.9 9.4 4.6 4.6 0 0 0 7 18.5Z"/><path d="m9.5 13.5 2 2 3.5-4"/>',
+      cloudoff: '<path d="M7 18.5h10a4 4 0 0 0 .7-7.9A5.6 5.6 0 0 0 6.9 9.4 4.6 4.6 0 0 0 7 18.5Z"/><path d="M4 4l16 16"/>',
+      cloudup: '<path d="M7 18.5h10a4 4 0 0 0 .7-7.9A5.6 5.6 0 0 0 6.9 9.4 4.6 4.6 0 0 0 7 18.5Z"/><path d="M12 16v-5M9.8 13l2.2-2.2L14.2 13"/>',
+      refresh: '<path d="M20 11a8 8 0 0 0-14-4M4 4v4h4M4 13a8 8 0 0 0 14 4M20 20v-4h-4"/>',
+      lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'
     };
     /* кнопка-иконка 46x46: подпись только в aria-label и title */
     function ib(attr, icon, label, cls) {
@@ -1194,8 +1208,10 @@
       var type = S.addType && allowed.indexOf(S.addType) > -1 ? S.addType : allowed[0];
       var addLabel = cur.t === 'home' ? 'Добавить место' : cur.t === 'place' ? 'Добавить в место' : 'Добавить в коробку';
 
-      var h = '<div class="head"><div class="h1row"><h1>' + esc(cur.n) + '</h1><button class="pen" data-edit="' + cur.id + '" aria-label="Изменить название">' + svg('pen', 18) + '</button></div><div class="stat">' + summary(cur) + '</div></div>';
-      if (cur.t !== 'home') h += '<div class="strip" style="--a:' + acc + '">' + thumbsHtml(cur, true) + '</div>';
+      var h = '<div class="head"><div class="h1row"><h1>' + esc(cur.n) + '</h1><button class="pen" data-edit="' + cur.id + '" aria-label="Изменить название">' + svg('pen', 18) + '</button>' +
+        (cur.t !== 'home' && (cur.ph || []).length < MAXPH ? '<button class="pen" data-addphoto="' + cur.id + '" aria-label="Добавить фото" title="Добавить фото">' + svg('cam', 18) + '</button>' : '') +
+        '</div><div class="stat">' + summary(cur) + '</div></div>';
+      if (cur.t !== 'home' && (cur.ph || []).length) h += '<div class="strip" style="--a:' + acc + '">' + thumbsHtml(cur, false) + '</div>';
       h += '<div class="bar" style="--a:' + acc + '">' +
         ib('data-toggle-add', 'plus', addLabel, 'primary' + (S.adding ? ' on' : '')) +
         (cur.t !== 'home' ? ib('data-qr="' + cur.id + '"', 'qr', 'QR-этикетка') : '') +
@@ -1309,13 +1325,22 @@
       return h + '<div class="ddnew"><input id="fNewCat" type="text" autocomplete="off" placeholder="Новая категория" value="' + esc(S.draftCat) + '" aria-label="Новая категория">' +
         ib('data-ddadd', 'plus', 'Создать категорию', 'primary') + '</div></div></div>';
     }
+    /* Категории вещи: сверху только присвоенные (нажатие снимает), остальные выбираются из списка */
     function catsBlock(n) {
-      var on = n.tg || [];
-      return '<div class="sec">Категории</div><div class="chips">' + settings.cats.map(function (c) {
-        var sel = on.indexOf(c.id) > -1;
-        return '<button type="button" class="chip' + (sel ? ' on' : '') + '" style="--c:' + c.c + '" data-tag="' + c.id + '" aria-pressed="' + sel + '">#' + esc(c.n) + '</button>';
-      }).join('') + '</div>' +
-        '<form class="inline" id="sCatForm"><input class="field" id="sCatName" type="text" autocomplete="off" placeholder="' + (settings.cats.length ? 'Новая категория' : 'Создайте первую категорию') + '" aria-label="Новая категория"><button class="btn" type="submit">Добавить</button></form>';
+      var on = n.tg || [], open = S.sdd === n.id;
+      var mine = settings.cats.filter(function (c) { return on.indexOf(c.id) > -1; });
+      var rest = settings.cats.filter(function (c) { return on.indexOf(c.id) < 0; });
+      var h = '<div class="sec">Категории</div>';
+      if (mine.length) h += '<div class="chips">' + mine.map(function (c) {
+        return '<button type="button" class="chip on" style="--c:' + c.c + '" data-tag="' + c.id + '" aria-label="Убрать категорию ' + esc(c.n) + '">#' + esc(c.n) + ' ' + svg('x', 14) + '</button>';
+      }).join('') + '</div>';
+      h += '<div class="dd"><button type="button" class="ddbtn" data-sdd aria-expanded="' + open + '"><span class="ddsum">' + (mine.length ? 'Добавить категорию' : 'Выбрать категорию') + '</span>' + svg('chevd', 20) + '</button>' +
+        '<div class="ddlist" id="sddlist"' + (open ? '' : ' hidden') + '>' +
+        rest.map(function (c) {
+          return '<button type="button" class="ddrow" role="option" style="--c:' + c.c + '" data-tag="' + c.id + '"><span class="ddchk">' + svg('check', 16) + '</span><span class="ddname">#' + esc(c.n) + '</span></button>';
+        }).join('') +
+        '<form class="ddnew" id="sCatForm"><input class="field" id="sCatName" type="text" autocomplete="off" placeholder="Новая категория" aria-label="Новая категория">' + ib('', 'plus', 'Создать категорию', 'primary').replace('type="button"', 'type="submit"') + '</form></div></div>';
+      return h;
     }
 
     function qrControls() {
@@ -1332,7 +1357,7 @@
       if (!sh) return '';
       var n = findNode(root, sh.id);
       if (!n) { S.sheet = null; return ''; }
-      var a = accOf(n.id), h = '<div class="scrim" data-close></div><div class="panel" role="dialog" aria-modal="true" style="--a:' + a + '">';
+      var a = accOf(n.id), h = '<div class="scrim" data-close></div><div class="panel" role="dialog" aria-modal="true" style="--a:' + a + '"><div class="grab" aria-hidden="true"></div>';
       var head = function (kind) {
         return '<div class="phead">' + (sh.back ? '<button class="x" data-close aria-label="Назад">' + svg('back', 18) + '</button>' : '') +
           '<div class="kind" style="flex:1">' + kind + '</div><button class="x" data-close aria-label="Закрыть">' + svg('x', 18) + '</button></div>';
@@ -1393,26 +1418,38 @@
       f.innerHTML = '<span>Данные хранятся в Home Assistant · v' + (VERSION.indexOf('__') === 0 ? '?' : VERSION) + (memOnly ? ' · без сохранения на устройстве' : '') + '</span><span>' + esc(t) + '</span>' +
         '<span class="fb"><button data-trash>Корзина' + (trashList().length ? ' (' + trashList().length + ')' : '') + '</button><button data-svc>Сервис</button><button data-sync>Синхронизировать</button>' + (env.logout ? '<button data-logout>Выйти</button>' : '') + '</span>';
     }
+    /* Значок состояния связи: стоит на месте, меняются только цвет и рисунок */
+    var netInfo = { msg: '', act: 'sync' };
     function renderSync() {
-      var b = $('syncbar'); if (!b) return;
-      var n = pendingCount(), html = '', st = '#42a5f5';
+      var b = $('netBtn'); if (!b) return;
+      var n = pendingCount(), st, icon, msg, act = 'sync', spin = false;
       var oldMs = dsince && n ? Date.now() - dsince : 0, days = Math.floor(oldMs / 86400000);
       if (net === 'auth') {
-        st = '#e53935';
-        html = '<span>Нет доступа к Home Assistant. ' + (env.reauth ? 'Введите токен заново.' : 'Войдите в Home Assistant заново.') + '</span>' + (env.reauth ? '<button class="mini2" data-reauth>Токен</button>' : '');
+        st = '#e53935'; icon = 'lock'; act = env.reauth ? 'reauth' : 'none';
+        msg = 'Нет доступа к Home Assistant. ' + (env.reauth ? 'Нажмите, чтобы ввести токен заново.' : 'Войдите в Home Assistant заново.');
       } else if (net === 'offline') {
-        st = '#ffa000';
-        html = '<span>' + (n ? 'Нет связи. Изменения сохранены на устройстве: ' + n + '.' + (days >= 2 ? ' Не отправляются уже ' + days + ' дн., подключитесь к сети.' : '') : 'Нет связи. Приложение работает без сети.') + '</span><button class="mini2" data-sync>Повторить</button>';
-        if (days >= 2) st = '#e53935';
+        st = '#e53935'; icon = 'cloudoff';
+        msg = n ? 'Нет связи. Изменения сохранены на устройстве: ' + n + '.' + (days >= 2 ? ' Не отправляются уже ' + days + ' дн.' : '') + ' Нажмите, чтобы повторить.' : 'Нет связи. Приложение работает без сети. Нажмите, чтобы повторить.';
       } else if (net === 'sync') {
-        html = '<span>Синхронизация…</span>';
+        st = '#2196f3'; icon = 'refresh'; spin = true; act = 'none'; msg = 'Синхронизация…';
       } else if (n) {
-        if (days >= 2) st = '#e53935';
-        html = '<span>Ожидает отправки: ' + n + (days >= 2 ? '. Не уходит уже ' + days + ' дн.' : '') + '</span><button class="mini2" data-sync>Отправить</button>';
+        st = days >= 2 ? '#e53935' : '#ffa000'; icon = 'cloudup';
+        msg = 'Ожидает отправки: ' + n + (days >= 2 ? '. Не уходит уже ' + days + ' дн.' : '') + '. Нажмите, чтобы отправить.';
       } else if (S.stale) {
-        html = '<span>Вышла новая версия панели.</span><button class="mini2" data-reload>Обновить</button>';
+        st = '#7e57c2'; icon = 'refresh'; act = 'reload'; msg = 'Вышла новая версия панели. Нажмите, чтобы обновить.';
+      } else {
+        st = '#43a047'; icon = 'cloudok';
+        msg = 'Всё синхронизировано' + (lastSync ? ' в ' + new Date(lastSync).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '') + '.';
       }
-      b.hidden = !html; b.style.setProperty('--st', st); b.innerHTML = html;
+      netInfo.msg = msg; netInfo.act = act;
+      b.style.setProperty('--st', st);
+      b.classList.toggle('spin', spin);
+      b.setAttribute('aria-label', msg); b.title = msg;
+      var key = icon + (n && net !== 'sync' ? n : '');
+      if (b.getAttribute('data-k') !== key) {
+        b.setAttribute('data-k', key);
+        b.innerHTML = svg(icon, 22) + (n && net !== 'sync' ? '<span class="nbadge">' + (n > 99 ? '99+' : n) + '</span>' : '');
+      }
     }
     function render() {
       if (destroyed) return;
@@ -1447,7 +1484,9 @@
       $('view').innerHTML = ((searching || finding) ? findView() : S.mode === 'cats' ? catsView() : S.mode === 'cat' ? catView() : S.mode === 'trash' ? trashView() : normalView(T));
       renderFoot(); renderSync();
       var sh = $('sheet'), html = sheetHtml();
+      var op = sh.querySelector('.panel'), ost = op ? op.scrollTop : 0;
       sh.innerHTML = html; sh.hidden = !html;
+      if (ost && html) { var np = sh.querySelector('.panel'); if (np) np.scrollTop = ost; }
       if (S.focus) { var f = $('fName'); if (f) f.focus(); S.focus = false; }
     }
 
@@ -1480,7 +1519,7 @@
     function goHome() {
       S.sheet = null; S.mode = null; S.path = []; S.adding = false; S.edit = false; S.conf = null; clearSearch(); render(); toTop();
     }
-    function closeSheet() { S.sheet = S.sheet && S.sheet.back ? S.sheet.back : null; S.conf = null; render(); }
+    function closeSheet() { S.sdd = null; S.sheet = S.sheet && S.sheet.back ? S.sheet.back : null; S.conf = null; render(); }
 
     function doDelete(id) {
       var n = findNode(root, id);
@@ -1549,6 +1588,11 @@
         return;
       }
       if (q('[data-sync]')) { sync(); return; }
+      if (q('#netBtn')) {
+        toast(netInfo.msg);
+        if (netInfo.act === 'sync') sync(); else if (netInfo.act === 'reauth') env.reauth(); else if (netInfo.act === 'reload') location.reload();
+        return;
+      }
       if (q('[data-reauth]') && env.reauth) { env.reauth(); return; }
       if (q('[data-logout]') && env.logout) { env.logout(); return; }
       if ((el = q('[data-themeset]')) && env.theme) { env.theme(el.getAttribute('data-themeset')); render(); return; }
@@ -1559,6 +1603,12 @@
         if (ai > -1) S.addTags.splice(ai, 1); else S.addTags.push(at);
         el.classList.toggle('on', ai < 0); el.setAttribute('aria-selected', String(ai < 0));
         var ds = $('ddsum'); if (ds) ds.textContent = ddSummary();
+        return;
+      }
+      if (q('[data-sdd]')) {
+        var sid = S.sheet && S.sheet.id; S.sdd = S.sdd === sid ? null : sid;
+        var sl = $('sddlist'); if (sl) sl.hidden = S.sdd !== sid;
+        q('[data-sdd]').setAttribute('aria-expanded', String(S.sdd === sid));
         return;
       }
       if (q('[data-dd]')) {
@@ -1573,7 +1623,7 @@
           tn.tg = tn.tg || [];
           var ti = tn.tg.indexOf(tid);
           if (ti > -1) tn.tg.splice(ti, 1); else tn.tg.push(tid);
-          el.classList.toggle('on', ti < 0); el.setAttribute('aria-pressed', String(ti < 0)); save();
+          save(); S.sdd = tn.id; render();
         }
         return;
       }
@@ -1690,7 +1740,7 @@
         if (!itm || !c2) { $('sCatName').focus(); return; }
         itm.tg = itm.tg || [];
         if (itm.tg.indexOf(c2.id) < 0) itm.tg.push(c2.id);
-        save(); render(); return;
+        S.sdd = itm.id; save(); render(); return;
       }
       if (fid !== 'addForm') return;
       e.preventDefault();
@@ -1783,6 +1833,69 @@
     }
     render();
     var bootT = setTimeout(function () { memOnly = true; afterDb(); }, 3000);
+    /* Жест 1: шторка (карточка вещи и др.) закрывается свайпом вниз */
+    (function () {
+      var sh = $('sheet'), t0 = null, panel = null, dy = 0, tm = 0;
+      sh.addEventListener('touchstart', function (e) {
+        panel = e.target.closest ? e.target.closest('.panel') : null;
+        if (!panel || e.touches.length !== 1 || panel.scrollTop > 0) { panel = null; return; }
+        t0 = { x: e.touches[0].clientX, y: e.touches[0].clientY }; dy = 0; tm = Date.now(); panel.style.transition = 'none';
+      }, { passive: true });
+      sh.addEventListener('touchmove', function (e) {
+        if (!panel || !t0) return;
+        var d = e.touches[0].clientY - t0.y, dx = Math.abs(e.touches[0].clientX - t0.x);
+        if (d <= 0 || (dx > d && dy === 0)) { if (dy === 0) { panel.style.transition = ''; panel = null; } else { dy = 0; panel.style.transform = ''; } return; }
+        if (panel.scrollTop > 0) return;
+        dy = d; panel.style.transform = 'translateY(' + d + 'px)';
+        var sc = sh.querySelector('.scrim'); if (sc) sc.style.opacity = String(Math.max(0, 1 - d / 500));
+        if (e.cancelable) e.preventDefault();
+      }, { passive: false });
+      function end() {
+        if (!panel) return;
+        var p = panel, d = dy, fast = d / Math.max(1, Date.now() - tm) > 0.6; panel = null; t0 = null; dy = 0;
+        p.style.transition = 'transform .2s ease';
+        if (d > 110 || (fast && d > 40)) { p.style.transform = 'translateY(105%)'; setTimeout(closeSheet, 190); }
+        else { p.style.transform = ''; var sc = sh.querySelector('.scrim'); if (sc) sc.style.opacity = ''; }
+      }
+      sh.addEventListener('touchend', end); sh.addEventListener('touchcancel', end);
+    })();
+
+    /* Жест 2 (приложение): свайп от левого края вправо = «Назад», страница сдвигается за пальцем */
+    if (env.kind === 'pwa') (function () {
+      var wrap = sr.querySelector('.wrap'), st = null, locked = false, dx = 0, tm = 0;
+      function can() { return !S.sheet && !!(S.path.length || S.mode || S.q.trim()); }
+      host.addEventListener('touchstart', function (e) {
+        st = null; locked = false; dx = 0;
+        if (e.touches.length !== 1 || e.touches[0].clientX > 28 || !can()) return;
+        st = { x: e.touches[0].clientX, y: e.touches[0].clientY }; tm = Date.now(); wrap.style.transition = 'none';
+      }, { passive: true });
+      host.addEventListener('touchmove', function (e) {
+        if (!st) return;
+        var mx = e.touches[0].clientX - st.x, my = e.touches[0].clientY - st.y;
+        if (!locked) {
+          if (Math.abs(mx) < 8 && Math.abs(my) < 8) return;
+          if (mx > 0 && Math.abs(mx) > Math.abs(my)) locked = true; else { st = null; wrap.style.transition = ''; return; }
+        }
+        dx = Math.max(0, mx);
+        wrap.style.transform = 'translateX(' + dx + 'px)'; wrap.style.boxShadow = '-8px 0 24px rgba(0,0,0,.18)';
+        if (e.cancelable) e.preventDefault();
+      }, { passive: false });
+      function end() {
+        if (!st) return;
+        var d = dx, fast = d / Math.max(1, Date.now() - tm) > 0.5, w = window.innerWidth; st = null;
+        wrap.style.transition = 'transform .18s ease';
+        if (locked && (d > w * 0.3 || (fast && d > 40))) {
+          wrap.style.transform = 'translateX(' + w + 'px)';
+          setTimeout(function () {
+            goBack(); wrap.style.transition = 'none'; wrap.style.transform = 'translateX(-30px)'; wrap.style.opacity = '.6'; wrap.style.boxShadow = '';
+            requestAnimationFrame(function () { requestAnimationFrame(function () { wrap.style.transition = 'transform .18s ease, opacity .18s ease'; wrap.style.transform = ''; wrap.style.opacity = ''; }); });
+          }, 170);
+        } else { wrap.style.transform = ''; wrap.style.boxShadow = ''; }
+        locked = false; dx = 0;
+      }
+      host.addEventListener('touchend', end); host.addEventListener('touchcancel', end);
+    })();
+
     dbOpen(function (ok) { if (!ok) memOnly = true; afterDb(); });
 
     return {
