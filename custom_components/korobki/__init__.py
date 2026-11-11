@@ -227,6 +227,7 @@ async def _run_gc(hass: HomeAssistant, min_age: float) -> dict:
 
 
 class StatsView(HomeAssistantView):
+    cors_allowed = True  # локальный и внешний адреса — разные источники для браузера
     """GET /api/korobki/stats: сколько фото и сколько из них лишних."""
 
     url = "/api/korobki/stats"
@@ -245,6 +246,7 @@ class StatsView(HomeAssistantView):
 
 
 class CleanupView(HomeAssistantView):
+    cors_allowed = True  # локальный и внешний адреса — разные источники для браузера
     """POST /api/korobki/cleanup: удалить лишние фото сейчас."""
 
     url = "/api/korobki/cleanup"
@@ -374,6 +376,7 @@ APP_FILES = {
 
 
 class AppView(HomeAssistantView):
+    cors_allowed = True  # локальный и внешний адреса — разные источники для браузера
     """Файлы установленного приложения: /korobki_app/, /korobki_app/index.html, sw.js и так далее.
 
     Каждый файл отдаётся явно, папка целиком не раздаётся (адрес папки Home Assistant отдаёт как 403).
@@ -449,6 +452,7 @@ def _clean(r: object) -> dict | None:
 
 
 class SyncView(HomeAssistantView):
+    cors_allowed = True  # локальный и внешний адреса — разные источники для браузера
     """POST /api/korobki/sync: принять изменения устройства и отдать чужие.
 
     Запрос: {since, records:[...]}. Побеждает запись с большей меткой u (последняя правка).
@@ -515,6 +519,8 @@ def _photo_response(body: bytes) -> web.Response:
 
 class _PhotoBase(HomeAssistantView):
     """Общая часть: путь к файлу и чтение/запись в потоке-исполнителе."""
+
+    cors_allowed = True  # локальный и внешний адреса — разные источники для браузера
 
     requires_auth = True
 

@@ -220,6 +220,9 @@
     '.form .qrow { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; }',
     '.form .qrow input { width: 96px; }',
     '.actions { display: flex; gap: 8px; flex-wrap: wrap; }',
+    '.actions.right { justify-content: flex-end; }',
+    '.th .thx { position: absolute; right: 3px; top: 3px; width: 20px; height: 20px; border-radius: 10px; background: rgba(0,0,0,.55); color: #fff; display: grid; place-items: center; }',
+    '.th { position: relative; }',
     '.empty { padding: 22px 16px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 16px; display: grid; gap: 12px; justify-items: center; }',
     '.foot { margin-top: 28px; margin-bottom: 20px; padding: 0 2px; font-size: 12px; color: var(--muted); display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }',
     '.sheet { position: fixed; inset: 0; z-index: 20; display: flex; align-items: flex-end; justify-content: center; }',
@@ -399,7 +402,7 @@
     var net = 'idle', lastSync = 0, syncing = null, again = false;
     var persistT = null, syncT = null, pollT = null, unsub = null;
     var narrow = false, pendingRoute = null, lastRoutePath = null, dsince = 0, expBlob = null, impData = null;
-    var S = { mode: null, catId: null, stale: false, path: [], q: '', adding: false, addType: null, draft: '', edit: false, conf: null, focus: false, addTags: [], dd: false, sdd: null, draftCat: '', sheet: null, pick: null, error: '', bulk: false, keep: false, f: { cats: [], nocat: false, nophoto: false, sort: 'path' }, svc: { stats: null, est: null, persisted: null, busy: '', exp: null, imp: null } };
+    var S = { mode: null, catId: null, stale: false, path: [], q: '', adding: false, addType: null, draft: '', edit: false, conf: null, focus: false, addTags: [], dd: false, sdd: null, draftNote: '', addFiles: [], draftCat: '', sheet: null, pick: null, error: '', bulk: false, keep: false, f: { cats: [], nocat: false, nophoto: false, sort: 'path' }, svc: { stats: null, est: null, persisted: null, busy: '', exp: null, imp: null } };
 
     function normSettings(x) {
       var o = Object.assign({ qr: 'app', base: '', cats: [] }, x || {});
@@ -1090,6 +1093,14 @@
           '<input class="field" id="srvUrl" type="url" inputmode="url" autocapitalize="off" autocomplete="off" placeholder="' + esc(location.origin) + '" value="' + esc(env.server.get()) + '" aria-label="Адрес сервера">' +
           (v.srvErr ? '<div class="warn2">' + esc(v.srvErr) + '</div>' : '') +
           '<div class="actions"><button class="btn primary" data-srvsave>Проверить и сохранить</button><button class="btn" data-srvreset>Как на этом сайте</button></div>';
+        if (env.server.local) {
+          var act = env.server.local.active(), lv = v.lval != null ? v.lval : env.server.local.get();
+          h += '<div class="sec">Локальный адрес (пробуется первым)</div><div class="hint">Дома приложение сначала обращается по этому адресу, а если он не отвечает (вы не в домашней сети), переходит на основной. Адрес должен быть https:// с рабочим сертификатом, иначе iOS его заблокирует. Название Wi-Fi сети веб-приложение прочитать не может, поэтому доступность проверяется самим обращением.</div>' +
+            '<input class="field" id="srvLocal" type="url" inputmode="url" autocapitalize="off" autocomplete="off" placeholder="https://ha.home.example" value="' + esc(lv) + '" aria-label="Локальный адрес сервера">' +
+            (v.lsrvErr ? '<div class="warn2">' + esc(v.lsrvErr) + '</div>' : '') +
+            (env.server.local.get() ? '<div class="hint">Сейчас: ' + (act === 'local' ? 'подключено по локальному адресу' : act === 'global' ? 'подключено по основному адресу (локальный недоступен)' : 'ещё не проверялось') + '</div>' : '') +
+            '<div class="actions"><button class="btn primary" data-lsave>Проверить и сохранить</button><button class="btn" data-lreset>Убрать</button></div>';
+        }
       }
       if (env.theme) {
         var tm = env.theme();
@@ -1219,15 +1230,11 @@
       var type = S.addType && allowed.indexOf(S.addType) > -1 ? S.addType : allowed[0];
       var addLabel = cur.t === 'home' ? 'Добавить место' : cur.t === 'place' ? 'Добавить в место' : 'Добавить в коробку';
 
-      var nph = (cur.ph || []).length;
-      var h = '<div class="head"><div class="h1row"><h1><button type="button" class="h1btn" data-edit="' + cur.id + '" aria-label="Изменить название: ' + esc(cur.n) + '">' + esc(cur.n) + '</button></h1>' +
-        (cur.t !== 'home' && nph < MAXPH ? '<button class="pen" data-addphoto="' + cur.id + '" aria-label="Добавить фото" title="Добавить фото">' + svg('cam', 18) + '</button>' : '') +
-        (cur.t !== 'home' ? thumbsHtml(cur, false) : '') + '</div></div>';
+      var h = '<div class="head"><div class="h1row"><h1><button type="button" class="h1btn" data-edit="' + cur.id + '" aria-label="Изменить название: ' + esc(cur.n) + '">' + esc(cur.n) + '</button></h1></div></div>';
       /* Панель кнопок: слоты всегда на одних местах, недоступные гаснут */
       h += '<div class="bar" style="--a:' + acc + '">' +
         ib('data-toggle-add', 'plus', addLabel, 'primary' + (S.adding ? ' on' : '')) +
         ib(cur.t !== 'home' ? 'data-qr="' + cur.id + '"' : 'disabled', 'qr', 'QR-этикетка') +
-        ib(conts.length ? 'data-labels="' + cur.id + '"' : 'disabled', 'sheet', 'Лист этикеток') +
         ib(cur.ch.length ? 'data-toggle-edit' : 'disabled', S.edit ? 'check' : 'pen', S.edit ? 'Готово' : 'Править', S.edit ? 'on' : '') +
         '</div>';
 
@@ -1247,7 +1254,13 @@
         if (type === 'item') h += '<label class="tgl"><input type="checkbox" data-bulk' + (S.bulk ? ' checked' : '') + '> Списком, по одной вещи в строке</label>' +
           '<label class="tgl"><input type="checkbox" data-keep' + (S.keep ? ' checked' : '') + '> Добавлять подряд, категории запоминаются</label>';
         if (type === 'item') h += addCatsHtml();
-        h += '<div class="actions"><button class="btn primary" type="submit">Добавить</button><button class="btn" type="button" data-toggle-add>Отмена</button></div></form>';
+        if (type === 'item' && !S.bulk) h += '<label class="sec" for="fNote">Пометка</label><textarea class="field ta" id="fNote" rows="2" placeholder="Срок годности, размер, где купили">' + esc(S.draftNote) + '</textarea>';
+        if (!(type === 'item' && S.bulk)) {
+          h += '<div class="sec">Фото</div><div class="grid">' + S.addFiles.map(function (f, i) {
+            return '<button type="button" class="th" data-newphdel="' + i + '" style="background-image:url(' + f.url + ')" aria-label="Убрать фото ' + (i + 1) + '"><span class="thx">' + svg('x', 14) + '</span></button>';
+          }).join('') + (S.addFiles.length < MAXPH ? '<button type="button" class="th add" data-addphoto="__new">' + svg('cam', 22) + '<span>Фото</span></button>' : '') + '</div>';
+        }
+        h += '<div class="actions right"><button class="btn" type="button" data-toggle-add>Отмена</button><button class="btn primary" type="submit">Добавить</button></div></form>';
       }
 
       if (conts.length) {
@@ -1390,6 +1403,7 @@
           (n.t === 'home' ? '' : '<div class="sec">Цвет</div><div class="swatches">' +
             (n.t === 'box' ? '<button type="button" class="sw auto' + (!n.c ? ' on' : '') + '" data-setcolor="" data-for="' + n.id + '">Как у места</button>' : '') +
             PAL.map(function (c) { return '<button type="button" class="sw' + (n.c === c ? ' on' : '') + '" style="--c:' + c + '" data-setcolor="' + c + '" data-for="' + n.id + '" aria-label="Цвет ' + c + '"></button>'; }).join('') + '</div>') +
+          (n.t === 'home' ? '' : '<div class="sec">Фото</div><div class="grid">' + thumbsHtml(n, true) + '</div>') +
           (n.t === 'home' ? '' : nodeActions(n));
       } else if (sh.type === 'svc') {
         h += svcHtml(head);
@@ -1404,11 +1418,6 @@
           '<img class="labimg" alt="Этикетка: ' + esc(n.n) + '" src="' + labelImage([n]) + '">' +
           '<div class="hint">Нажмите на картинку и удерживайте, чтобы сохранить или отправить на печать.</div>' +
           qrControls() + '<div class="url">' + esc(linkFor(n.id)) + '</div>';
-      } else if (sh.type === 'labels') {
-        var kids = n.ch.filter(function (c) { return c.t !== 'item'; });
-        h += head('Этикетки') +
-          '<img class="labimg" alt="Лист этикеток" src="' + labelImage(kids) + '">' +
-          '<div class="hint">Этикетки всех вложенных коробок и мест. Нажмите на картинку и удерживайте, чтобы сохранить.</div>' + qrControls();
       } else if (sh.type === 'viewer') {
         var ids = n.ph || [], i = Math.min(Math.max(0, sh.idx), ids.length - 1), pid = ids[i];
         var src = photoUrl(pid, true) || photoUrl(pid);
@@ -1507,6 +1516,10 @@
     function toast(msg) {
       var t = $('toast'); t.textContent = msg; t.hidden = false;
       clearTimeout(toastT); toastT = setTimeout(function () { t.hidden = true; }, 2600);
+    }
+    function clearNewFiles() {
+      S.addFiles.forEach(function (f) { try { URL.revokeObjectURL(f.url); } catch (e) {} });
+      S.addFiles = [];
     }
     function addCatInline() {
       var inp = $('fNewCat'), f = $('fName') || $('fBulk');
@@ -1608,6 +1621,14 @@
       }
       if (q('[data-reauth]') && env.reauth) { env.reauth(); return; }
       if (q('[data-logout]') && env.logout) { env.logout(); return; }
+      if ((q('[data-lsave]') || q('[data-lreset]')) && env.server && env.server.local) {
+        var lnu = q('[data-lreset]') ? '' : (($('srvLocal') || {}).value || '');
+        S.svc.lval = lnu; S.svc.lsrvErr = 'Проверяю…'; render();
+        env.server.local.set(lnu).then(function () {
+          S.svc.lsrvErr = ''; S.svc.lval = null; render(); toast(lnu.trim() ? 'Локальный адрес сохранён' : 'Локальный адрес убран');
+        }).catch(function (x) { S.svc.lsrvErr = x && x.message === 'Failed to fetch' ? 'Нет связи с этим адресом (проверьте https и сертификат).' : (x && x.message) || 'Ошибка'; render(); });
+        return;
+      }
       if ((q('[data-srvsave]') || q('[data-srvreset]')) && env.server) {
         var nu = q('[data-srvreset]') ? '' : ($('srvUrl') || {}).value;
         S.svc.srvErr = 'Проверяю…'; render();
@@ -1689,6 +1710,10 @@
         S.mode = 'cats'; render(); toTop();
       } else if ((el = q('[data-addphoto]'))) {
         S.pick = el.getAttribute('data-addphoto'); $('pick').click();
+      } else if ((el = q('[data-newphdel]'))) {
+        var gone = S.addFiles.splice(Number(el.getAttribute('data-newphdel')), 1)[0];
+        if (gone) { try { URL.revokeObjectURL(gone.url); } catch (e0) {} }
+        render();
       } else if ((el = q('[data-view]'))) {
         var parts = el.getAttribute('data-view').split(':');
         S.sheet = { type: 'viewer', id: parts[0], idx: Number(parts[1]), back: S.sheet }; render();
@@ -1697,8 +1722,6 @@
         S.sheet.idx = Math.min(Math.max(0, S.sheet.idx + Number(el.getAttribute('data-nav'))), Math.max(0, len - 1)); render();
       } else if ((el = q('[data-qr]'))) {
         S.sheet = { type: 'qr', id: el.getAttribute('data-qr'), back: S.sheet && (S.sheet.type === 'item' || S.sheet.type === 'node') ? S.sheet : null }; render();
-      } else if ((el = q('[data-labels]'))) {
-        S.sheet = { type: 'labels', id: el.getAttribute('data-labels'), back: null }; render();
       } else if ((el = q('[data-sheet]'))) {
         S.sheet = { type: 'item', id: el.getAttribute('data-sheet'), back: null }; render();
       } else if ((el = q('[data-open]'))) {
@@ -1710,7 +1733,7 @@
       } else if ((el = q('[data-crumb]'))) {
         S.mode = null; S.path = S.path.slice(0, Number(el.getAttribute('data-crumb'))); S.adding = false; S.edit = false; clearSearch(); render(); toTop();
       } else if (q('[data-toggle-add]')) {
-        S.adding = !S.adding; S.draft = ''; S.draftCat = ''; S.addTags = []; S.addType = null; S.dd = false; S.focus = S.adding; render();
+        clearNewFiles(); S.adding = !S.adding; S.draft = ''; S.draftNote = ''; S.draftCat = ''; S.addTags = []; S.addType = null; S.dd = false; S.focus = S.adding; render();
       } else if (q('[data-toggle-edit]')) {
         S.edit = !S.edit; render();
       } else if ((el = q('[data-type]'))) {
@@ -1788,8 +1811,10 @@
           var pal = ['#ffc107', '#03a9f4', '#9c27b0', '#f44336', '#4caf50', '#00bcd4', '#ff7043'];
           node.c = pal[cur.ch.length % pal.length];
         }
+        if (type === 'item') node.note = ($('fNote') || {}).value ? $('fNote').value.trim() : '';
         nodes.push(node);
       }
+      var newFiles = nodes.length === 1 ? S.addFiles.map(function (x) { return x.f; }) : [];
       if (type === 'item') {
         var tags = S.addTags.filter(function (t) { return catById(t); });
         var fresh = addCat(($('fNewCat') || {}).value);
@@ -1798,13 +1823,29 @@
         S.addTags = S.keep ? tags : [];
       }
       nodes.forEach(function (nd) { cur.ch.push(nd); });
+      S.addFiles.forEach(function (x) { try { URL.revokeObjectURL(x.url); } catch (e) {} }); S.addFiles = []; S.draftNote = '';
       if (type === 'item' && S.keep) { S.draft = ''; S.draftCat = ''; S.focus = true; toast('Добавлено: ' + nodes.length); }
       else { S.adding = false; S.draft = ''; S.draftCat = ''; S.addTags = []; S.addType = null; S.dd = false; }
       save(); render();
+      if (newFiles.length) {
+        var tn = nodes[0], left = newFiles.length;
+        newFiles.forEach(function (f) {
+          addPhotoLocal(f).then(function (pid) {
+            if (pid) tn.ph = (tn.ph || []).concat(pid);
+            if (--left === 0) { save(); render(); }
+          });
+        });
+      }
     });
 
     $('pick').addEventListener('change', function () {
-      var files = Array.prototype.slice.call(this.files || []), node = S.pick ? findNode(root, S.pick) : null;
+      var files = Array.prototype.slice.call(this.files || []);
+      if (S.pick === '__new') {
+        this.value = '';
+        files.slice(0, Math.max(0, MAXPH - S.addFiles.length)).forEach(function (f) { S.addFiles.push({ f: f, url: URL.createObjectURL(f) }); });
+        render(); return;
+      }
+      var node = S.pick ? findNode(root, S.pick) : null;
       this.value = '';
       if (!node || !files.length) return;
       files = files.slice(0, Math.max(0, MAXPH - (node.ph || []).length));
@@ -1821,6 +1862,12 @@
       });
     });
 
+    sr.addEventListener('input', function (e) {
+      var t = e.target; if (!t || !t.id) return;
+      if (t.id === 'fName' || t.id === 'fBulk') S.draft = t.value;
+      else if (t.id === 'fNote') S.draftNote = t.value;
+      else if (t.id === 'fNewCat') S.draftCat = t.value;
+    });
     $('q').addEventListener('input', function () { S.q = this.value; S.conf = null; render(); });
 
     function onVisible() {
