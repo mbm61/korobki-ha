@@ -44,7 +44,8 @@
 </form>
 <script>
 (function () {
-  var KEY = 'korobki-token', tok = '';
+  var KEY = 'korobki-token', SKEY = 'korobki-server', tok = '', BASE = '';
+  try { BASE = localStorage.getItem(SKEY) || ''; } catch (e) {}
   try { tok = localStorage.getItem(KEY) || ''; } catch (e) {}
   var login = document.getElementById('login');
   function req(method, path, body, type, signal) {
@@ -54,7 +55,7 @@
       if (body instanceof Blob) { init.body = body; h['Content-Type'] = type || 'image/jpeg'; }
       else { init.body = JSON.stringify(body); h['Content-Type'] = 'application/json'; }
     }
-    return fetch(path, init);
+    return fetch(BASE + path, init);
   }
   function start() {
     login.hidden = true;
@@ -65,6 +66,19 @@
       document.body.appendChild(el);
       el.transport = {
         kind: 'pwa', request: req,
+        server: {
+          get: function () { return BASE; },
+          set: function (v) {
+            v = (v || '').trim().replace(/\/+$/, '');
+            if (v && !/^https?:\/\//i.test(v)) return Promise.reject(new Error('Адрес должен начинаться с http:// или https://'));
+            var old = BASE; BASE = v;
+            return req('POST', '/api/korobki/sync', { since: 0, records: [] }).then(function (r) {
+              if (r.status === 401 || r.status === 403) throw new Error('Токен не подошёл на этом сервере');
+              if (!r.ok) throw new Error('Ошибка ' + r.status);
+              try { if (v) localStorage.setItem(SKEY, v); else localStorage.removeItem(SKEY); } catch (e) {}
+            }).catch(function (e) { BASE = old; throw e; });
+          }
+        },
         theme: function (v) {
           var cur = 'auto';
           try { cur = localStorage.getItem('korobki-theme') || 'auto'; } catch (e) {}

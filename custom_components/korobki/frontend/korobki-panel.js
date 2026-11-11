@@ -225,7 +225,7 @@
     '.sheet { position: fixed; inset: 0; z-index: 20; display: flex; align-items: flex-end; justify-content: center; }',
     '.sheet[hidden], .toast[hidden], .menu[hidden] { display: none; }',
     '.scrim { position: absolute; inset: 0; background: rgba(8, 12, 18, .5); }',
-    '.panel { position: relative; width: 100%; max-width: 560px; max-height: 90%; overflow-y: auto; overscroll-behavior: contain; background: var(--card); color: var(--fg); border-radius: 20px 20px 0 0; border: 1px solid color-mix(in srgb, var(--a) 35%, transparent); border-bottom: 0; background-image: linear-gradient(160deg, color-mix(in srgb, var(--a) 10%, var(--card)) 0%, var(--card) 65%); padding: 14px 16px calc(20px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 14px; }',
+    '.panel { position: relative; width: calc(100% - 16px); max-width: 560px; margin: 0 8px calc(8px + env(safe-area-inset-bottom, 0px)); max-height: calc(100% - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); overflow-y: auto; overscroll-behavior: contain; background: var(--card); color: var(--fg); border-radius: 24px; border: 1px solid color-mix(in srgb, var(--a) 35%, transparent); background-image: linear-gradient(160deg, color-mix(in srgb, var(--a) 10%, var(--card)) 0%, var(--card) 65%); padding: 14px 16px 20px; display: grid; gap: 14px; }',
     '.phead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }',
     '.kind { font-size: 12px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--a); }',
     '.x { width: 38px; height: 38px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); display: grid; place-items: center; }',
@@ -242,7 +242,10 @@
     '.toast { position: fixed; left: 50%; transform: translateX(-50%); z-index: 30; max-width: min(92vw, 420px); bottom: calc(80px + env(safe-area-inset-bottom, 0px)); pointer-events: none; padding: 10px 16px; border-radius: 12px; background: var(--fg); color: var(--bg); font-size: 14px; text-align: center; }',
     '.pill { flex: none; height: 36px; padding: 0 14px 0 12px; border-radius: 18px; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); background: color-mix(in srgb, var(--accent) 14%, var(--card)); }',
     '.pill.on { background: color-mix(in srgb, var(--accent) 34%, var(--card)); }',
-    '.h1row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }',
+    '.h1row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }',
+    '.h1btn { display: block; max-width: 100%; margin: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-align: left; overflow-wrap: anywhere; cursor: text; }',
+    '.h1row .th { width: 34px; height: 34px; border-radius: 10px; }',
+    '.ib[disabled] { opacity: .3; cursor: default; }',
     '.h1row h1 { margin: 0; min-width: 0; }',
     '.pen { width: 34px; height: 34px; flex: none; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--muted); display: grid; place-items: center; }',
     '.chips { display: flex; flex-wrap: wrap; gap: 6px; }',
@@ -299,6 +302,7 @@
     '.bnav button { flex: 1; height: 42px; border-radius: 14px; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 12%, var(--card)) 0%, var(--card) 65%); }',
     '.bnav button:active { transform: scale(.98); }',
     '@media (min-width: 900px) { .bnav { display: none; } }',
+    '@media (max-width: 899px) { .toprow { display: none; } }',
     /* плотные строки вещей (вариант Б) */
     '.row { min-height: 50px; padding: 6px 12px 6px 10px; }',
     '.rthumb { width: 36px; height: 36px; border-radius: 50%; }',
@@ -312,7 +316,8 @@
     '.cover { height: 104px; position: relative; display: grid; place-items: center; color: var(--a); background-color: color-mix(in srgb, var(--a) 18%, var(--card)); background-size: cover; background-position: center; }',
     '.cover svg { width: 40px; height: 40px; }',
     '.badge { position: absolute; right: 8px; top: 8px; min-width: 24px; padding: 1px 8px; border-radius: 12px; background: rgba(0, 0, 0, .55); color: #fff; font-size: 12px; font-weight: 600; text-align: center; }',
-    '.g .del { position: absolute; right: 8px; top: 8px; background: var(--card); }',
+    '.g .del { position: absolute; right: 8px; top: 8px; width: 38px; height: 38px; min-width: 0; padding: 0; background: var(--card); }',
+    '.del svg, .cover .del svg { width: 16px; height: 16px; }',
     '.gb { padding: 9px 11px 11px; }',
     '.gb .name { font-size: 15px; }',
     /* вложенные коробки: компактно, с цветной полосой */
@@ -1080,6 +1085,12 @@
       var v = S.svc, st = v.stats, n = pendingCount(), tr = trashList().length;
       var h = head('Сервис');
       if (v.busy) h += '<div class="hint">' + esc(v.busy) + '</div>';
+      if (env.server) {
+        h += '<div class="sec">Сервер</div><div class="hint">Адрес Home Assistant, с которым синхронизируется приложение. Пусто: тот же сайт, с которого открыто приложение. Нужен адрес того же Home Assistant, например домашний вместо внешнего. Чужой адрес должен разрешать доступ (cors_allowed_origins).</div>' +
+          '<input class="field" id="srvUrl" type="url" inputmode="url" autocapitalize="off" autocomplete="off" placeholder="' + esc(location.origin) + '" value="' + esc(env.server.get()) + '" aria-label="Адрес сервера">' +
+          (v.srvErr ? '<div class="warn2">' + esc(v.srvErr) + '</div>' : '') +
+          '<div class="actions"><button class="btn primary" data-srvsave>Проверить и сохранить</button><button class="btn" data-srvreset>Как на этом сайте</button></div>';
+      }
       if (env.theme) {
         var tm = env.theme();
         h += '<div class="sec">Тема</div><div class="seg" role="group" aria-label="Тема оформления">' +
@@ -1170,12 +1181,12 @@
       return '<div class="g" style="--a:' + a + '" data-open="' + n.id + '" tabindex="0" role="button" aria-label="Открыть: ' + esc(n.n) + '">' +
         '<div class="cover" style="' + (p ? 'background-image:url(' + p + ')' : '') + '">' + (p ? '' : svg(n.t)) +
         (S.edit ? delHtml(n.id) : '<span class="badge" title="Вещей внутри">' + st.i + '</span>') + '</div>' +
-        '<div class="gb"><div class="name">' + esc(n.n) + '</div><div class="sub">' + summary(n) + '</div></div></div>';
+        '<div class="gb"><div class="name">' + esc(n.n) + '</div></div></div>';
     }
     function compactHtml(n, acc) {
       var a = n.c || acc;
       return '<div class="card cs" style="--a:' + a + '" data-open="' + n.id + '" tabindex="0" role="button" aria-label="Открыть: ' + esc(n.n) + '">' +
-        tileHtml(n) + '<div class="t"><div class="name">' + esc(n.n) + '</div><div class="sub">' + summary(n) + '</div></div>' +
+        tileHtml(n) + '<div class="t"><div class="name">' + esc(n.n) + '</div></div>' +
         (S.edit ? delHtml(n.id) : '<span class="chev">' + svg('chev', 18) + '</span>') + '</div>';
     }
     function delHtml(id) {
@@ -1186,7 +1197,7 @@
       var a = n.c || acc;
       return '<div class="card" style="--a:' + a + '" data-open="' + n.id + '" tabindex="0" role="button" aria-label="Открыть: ' + esc(n.n) + '">' +
         tileHtml(n) +
-        '<div class="t"><div class="name">' + esc(n.n) + '</div><div class="sub">' + summary(n) + '</div></div>' +
+        '<div class="t"><div class="name">' + esc(n.n) + '</div></div>' +
         (S.edit ? delHtml(n.id) : '<span class="chev">' + svg('chev', 20) + '</span>') + '</div>';
     }
     function thumbsHtml(n, addToo) {
@@ -1208,15 +1219,16 @@
       var type = S.addType && allowed.indexOf(S.addType) > -1 ? S.addType : allowed[0];
       var addLabel = cur.t === 'home' ? 'Добавить место' : cur.t === 'place' ? 'Добавить в место' : 'Добавить в коробку';
 
-      var h = '<div class="head"><div class="h1row"><h1>' + esc(cur.n) + '</h1><button class="pen" data-edit="' + cur.id + '" aria-label="Изменить название">' + svg('pen', 18) + '</button>' +
-        (cur.t !== 'home' && (cur.ph || []).length < MAXPH ? '<button class="pen" data-addphoto="' + cur.id + '" aria-label="Добавить фото" title="Добавить фото">' + svg('cam', 18) + '</button>' : '') +
-        '</div><div class="stat">' + summary(cur) + '</div></div>';
-      if (cur.t !== 'home' && (cur.ph || []).length) h += '<div class="strip" style="--a:' + acc + '">' + thumbsHtml(cur, false) + '</div>';
+      var nph = (cur.ph || []).length;
+      var h = '<div class="head"><div class="h1row"><h1><button type="button" class="h1btn" data-edit="' + cur.id + '" aria-label="Изменить название: ' + esc(cur.n) + '">' + esc(cur.n) + '</button></h1>' +
+        (cur.t !== 'home' && nph < MAXPH ? '<button class="pen" data-addphoto="' + cur.id + '" aria-label="Добавить фото" title="Добавить фото">' + svg('cam', 18) + '</button>' : '') +
+        (cur.t !== 'home' ? thumbsHtml(cur, false) : '') + '</div></div>';
+      /* Панель кнопок: слоты всегда на одних местах, недоступные гаснут */
       h += '<div class="bar" style="--a:' + acc + '">' +
         ib('data-toggle-add', 'plus', addLabel, 'primary' + (S.adding ? ' on' : '')) +
-        (cur.t !== 'home' ? ib('data-qr="' + cur.id + '"', 'qr', 'QR-этикетка') : '') +
-        (conts.length ? ib('data-labels="' + cur.id + '"', 'sheet', 'Лист этикеток') : '') +
-        (cur.ch.length ? ib('data-toggle-edit', S.edit ? 'check' : 'pen', S.edit ? 'Готово' : 'Править', S.edit ? 'on' : '') : '') +
+        ib(cur.t !== 'home' ? 'data-qr="' + cur.id + '"' : 'disabled', 'qr', 'QR-этикетка') +
+        ib(conts.length ? 'data-labels="' + cur.id + '"' : 'disabled', 'sheet', 'Лист этикеток') +
+        ib(cur.ch.length ? 'data-toggle-edit' : 'disabled', S.edit ? 'check' : 'pen', S.edit ? 'Готово' : 'Править', S.edit ? 'on' : '') +
         '</div>';
 
       if (S.adding) {
@@ -1294,7 +1306,7 @@
         }
         return '<div class="card" style="--a:' + c.c + '" data-cat="' + c.id + '" tabindex="0" role="button">' +
           '<div class="tile">' + svg('tag') + '</div>' +
-          '<div class="t"><div class="name">#' + esc(c.n) + '</div><div class="sub">' + (cnt ? pl(cnt, W.item) : 'Нет вещей') + '</div></div>' +
+          '<div class="t"><div class="name">#' + esc(c.n) + '</div></div>' +
           '<span class="chev">' + svg('chev', 20) + '</span></div>';
       }).join('') + '</div>';
     }
@@ -1485,6 +1497,7 @@
       renderFoot(); renderSync();
       var sh = $('sheet'), html = sheetHtml();
       var op = sh.querySelector('.panel'), ost = op ? op.scrollTop : 0;
+      host.style.overflowY = html ? 'hidden' : '';
       sh.innerHTML = html; sh.hidden = !html;
       if (ost && html) { var np = sh.querySelector('.panel'); if (np) np.scrollTop = ost; }
       if (S.focus) { var f = $('fName'); if (f) f.focus(); S.focus = false; }
@@ -1595,6 +1608,15 @@
       }
       if (q('[data-reauth]') && env.reauth) { env.reauth(); return; }
       if (q('[data-logout]') && env.logout) { env.logout(); return; }
+      if ((q('[data-srvsave]') || q('[data-srvreset]')) && env.server) {
+        var nu = q('[data-srvreset]') ? '' : ($('srvUrl') || {}).value;
+        S.svc.srvErr = 'Проверяю…'; render();
+        env.server.set(nu).then(function () {
+          since = 0; Object.keys(recs).forEach(function (id) { dirty[id] = true; });
+          persist(true); setTimeout(function () { location.reload(); }, 300);
+        }).catch(function (x) { S.svc.srvErr = x && x.message === 'Failed to fetch' ? 'Нет связи с этим адресом или он не разрешает доступ (CORS).' : (x && x.message) || 'Ошибка'; render(); });
+        return;
+      }
       if ((el = q('[data-themeset]')) && env.theme) { env.theme(el.getAttribute('data-themeset')); render(); return; }
       if (q('#catsBtn')) { S.mode = 'cats'; S.catId = null; S.edit = false; S.adding = false; S.conf = null; clearSearch(); render(); toTop(); return; }
       if (q('[data-reload]')) { location.reload(); return; }
@@ -1833,6 +1855,9 @@
     }
     render();
     var bootT = setTimeout(function () { memOnly = true; afterDb(); }, 3000);
+    $('sheet').addEventListener('touchmove', function (e) {
+      if (e.target.closest && !e.target.closest('.panel') && e.cancelable) e.preventDefault();
+    }, { passive: false });
     /* Жест 1: шторка (карточка вещи и др.) закрывается свайпом вниз */
     (function () {
       var sh = $('sheet'), t0 = null, panel = null, dy = 0, tm = 0;
