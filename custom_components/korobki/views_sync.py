@@ -1,0 +1,110 @@
+"""Синхронизация с устройствами, журнал операций и конфликты."""
+from __future__ import annotations
+
+import time
+
+from aiohttp import web
+
+from homeassistant.components.http import HomeAssistantView
+from homeassistant.core import HomeAssistant
+
+from .const import DOMAIN, EVENT_UPDATED, LOG_LIMIT, MAX_RECORDS_PER_SYNC
+from .model import apply_batch
+
+
+class SyncView(HomeAssistantView):
+    """POST /api/korobki/sync: принять изменения устройства и отдать чужие.
+
+    Запрос: {since, device, label, records:[...]}. Каждая запись может нести dv (id устройства), us (счётчик правок
+    устройства) и br (ревизия записи, на которой основана правка). Правила слияния описаны в model.py.
+    Ответ: {rev, version, records, conflicts (новые), nconf (нерешённые), fixes (исправлений графа)}.
+    """
+
+    cors_allowed = True  # локальный и внешний адреса — разные источники для браузера
+    url = "/api/korobki/sync"
+    name = "api:korobki:sync"
+    requires_auth = True
+
+    def __init__(self, hass: HomeAssistant) -> None:
+        self._hass = hass
+
+    async def post(self, request: web.Request) -> web.Response:
+        try:
+            body = await request.json()
+        except ValueError:
+            return self.json_message("Нужен JSON", 400)
+        if not isinstance(body, dict) or not isinstance(body.get("records", []), list):
+            return self.json_message("Неверный запрос", 400)
+        since = body.get("since", 0)
+        if not isinstance(since, int) or isinstance(since, bool):
+            since = 0
+        device = str(body.get("device") or "")[:64]
+        label = str(body.get("label") or "")[:40]
+        incoming = body.get("records", [])[:MAX_RECORDS_PER_SYNC]
+
+        st = self._hass.data[DOMAIN]
+        d, store = st["data"], st["store"]
+        now = int(time.time() * 1000)
+        res = apply_batch(d, incoming, device, now)
+        recs = d["recs"]
+        out = [r for r in recs.values() if r["r"] > since or r["id"] in res["touched"]]
+
+        if device:
+            d["devices"][device] = {"last": now, "label": label or d["devices"].get(device, {}).get("label", "")}
+        interesting = res["sent"] or out or res["fixes"]
+        if interesting:
+            d["log"].append({
+                "t": now, "dev": device[:8], "lb": label, "sent": res["sent"], "acc": res["accepted"],
+                "same": res["same"], "ign": res["ignored"], "rej": res["rejected"], "con": len(res["conflicts"]),
+                "fix": len(res["fixes"]), "clk": res["clock"], "pull": len(out), "rev": d["rev"],
+            })
+            del d["log"][:-LOG_LIMIT]
+        if res["changed"] or interesting:
+            store.async_delay_save(lambda: d, 1)
+        if res["changed"]:
+            self._hass.bus.async_fire(EVENT_UPDATED, {"rev": d["rev"]})
+        return self.json({
+            "rev": d["rev"], "version": st["version"], "records": out,
+            "conflicts": res["conflicts"], "nconf": len(d["conflicts"]), "fixes": len(res["fixes"]),
+            "fixlist": res["fixes"][:20],
+        })
+
+
+class LogView(HomeAssistantView):
+    """GET /api/korobki/log: последние операции синхронизации, нерешённые конфликты и устройства."""
+
+    cors_allowed = True
+    url = "/api/korobki/log"
+    name = "api:korobki:log"
+    requires_auth = True
+
+    def __init__(self, hass: HomeAssistant) -> None:
+        self._hass = hass
+
+    async def get(self, request: web.Request) -> web.Response:
+        d = self._hass.data[DOMAIN]["data"]
+        return self.json({
+            "rev": d["rev"], "log": list(reversed(d["log"][-50:])),
+            "conflicts": list(reversed(d["conflicts"])), "devices": d["devices"],
+        })
+
+
+class ConflictView(HomeAssistantView):
+    """POST /api/korobki/conflicts/<id> {action:"dismiss"}: конфликт разобран, убрать из списка."""
+
+    cors_allowed = True
+    url = "/api/korobki/conflicts/{cid}"
+    name = "api:korobki:conflict"
+    requires_auth = True
+
+    def __init__(self, hass: HomeAssistant) -> None:
+        self._hass = hass
+
+    async def post(self, request: web.Request, cid: str) -> web.Response:
+        st = self._hass.data[DOMAIN]
+        d = st["data"]
+        before = len(d["conflicts"])
+        d["conflicts"] = [c for c in d["conflicts"] if c["id"] != cid]
+        if len(d["conflicts"]) != before:
+            st["store"].async_delay_save(lambda: d, 1)
+        return self.json({"ok": True, "nconf": len(d["conflicts"])})

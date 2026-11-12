@@ -1,0 +1,27 @@
+"""Общие константы интеграции «Коробки»."""
+import re
+
+DOMAIN = "korobki"
+STORAGE_VERSION = 2
+EVENT_UPDATED = "korobki_updated"
+
+PANEL_URL_PATH = "korobki"
+STATIC_URL = "/korobki_static/korobki-panel.js"
+APP_URL = "/korobki_app"
+
+PHOTO_ID_RE = re.compile(r"^[0-9a-f]{16}$")
+MAX_PHOTO_BYTES = 6_000_000
+MAX_RECORDS_PER_SYNC = 5000
+
+TRASH_MS = 30 * 86400 * 1000
+ORPHAN_AUTO_AGE = 86400
+ORPHAN_MANUAL_AGE = 3600
+
+INTENT_FIND = "KorobkiFind"
+
+# Синхронизация и конфликты
+MAX_CLOCK_SKEW_MS = 5 * 60 * 1000  # метка времени «из будущего» дальше 5 минут считается ошибкой часов
+LOG_LIMIT = 100  # сколько последних операций синхронизации хранить
+CONFLICT_LIMIT = 100  # сколько нерешённых конфликтов хранить
+LOST_ID = "lost"  # место «Найденные», куда попадают записи без родителя
+LOST_NAME = "Найденные (восстановлено)"

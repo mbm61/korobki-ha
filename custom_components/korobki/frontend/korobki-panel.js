@@ -158,7 +158,7 @@
     ':focus-visible { outline: 2px solid var(--a, var(--accent)); outline-offset: 2px; }',
     '.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }',
     '.wrap { max-width: 560px; margin: 0 auto; padding: 0 16px env(safe-area-inset-bottom, 0px); }',
-    '.top { position: sticky; top: 0; z-index: 5; background: var(--bg); padding-block: calc(8px + env(safe-area-inset-top, 0px)) 6px; }',
+    '.top { position: sticky; top: 0; z-index: 5; background: var(--bg); padding-block: calc(18px + env(safe-area-inset-top, 0px)) 6px; }',
     '.toprow { display: flex; align-items: center; gap: 4px; min-height: 34px; }',
     '.top .srow { gap: 8px; }',
     '.top .menu { height: 34px; }',
@@ -276,6 +276,10 @@
     '.grab { width: 40px; height: 5px; border-radius: 3px; background: color-mix(in srgb, var(--fg) 25%, transparent); margin: -6px auto 2px; }',
     '.panel { touch-action: pan-y; }',
     '.strip .th { width: 60px; height: 60px; }',
+    '.cbox { border: 1px solid color-mix(in srgb, #fb8c00 45%, transparent); border-radius: 14px; padding: 10px 12px; margin: 8px 0; display: grid; gap: 6px; background: color-mix(in srgb, #fb8c00 8%, var(--card)); }',
+    '.cname { font-weight: 700; }',
+    '.cdiff, .logrow { font-size: 13px; overflow-wrap: anywhere; }',
+    '.logrow { padding: 3px 0; border-bottom: 1px solid var(--line); }',
     '.pill[hidden], .bnav[hidden], .iconbtn[hidden], .foot[hidden], .ddlist[hidden] { display: none; }',
     /* кнопки-иконки под палец */
     '.ib { min-width: 46px; height: 46px; padding: 0; flex: none; border-radius: 14px; border: 1px solid var(--line); background: var(--card); color: var(--fg); display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 14px; font-weight: 600; }',
@@ -397,7 +401,7 @@
     }
 
     var root = emptyRoot(), settings = normSettings({});
-    var recs = {}, dirty = {}, upq = [], delq = [], since = 0, device = '', everSynced = false;
+    var recs = {}, dirty = {}, upq = [], delq = [], since = 0, device = '', everSynced = false, useq = 0, nconf = 0;
     var loaded = false, destroyed = false, memOnly = false, booted = false;
     var net = 'idle', lastSync = 0, syncing = null, again = false;
     var persistT = null, syncT = null, pollT = null, unsub = null;
@@ -594,7 +598,7 @@
     function persist(now) { clearTimeout(persistT); persistT = setTimeout(doPersist, now ? 0 : 250); }
     function doPersist() {
       clearTimeout(persistT);
-      dbPut('kv', 'state', { recs: recs, dirty: Object.keys(dirty), upq: upq, delq: delq, since: since, device: device, synced: everSynced, dsince: dsince });
+      dbPut('kv', 'state', { recs: recs, dirty: Object.keys(dirty), upq: upq, delq: delq, since: since, device: device, useq: useq, nconf: nconf, synced: everSynced, dsince: dsince });
     }
 
     /* --- записи для синхронизации: каждая вещь, коробка, категория это отдельная запись с меткой времени --- */
@@ -624,14 +628,14 @@
       Object.keys(flat).forEach(function (id) {
         var f = flat[id], r = recs[id];
         if (!r || r.d || sig(r) !== sig(f)) {
-          var rec = norm(f); rec.u = Math.max(now, r ? r.u + 1 : 0); rec.d = false;
+          var rec = norm(f); rec.u = Math.max(now, r ? r.u + 1 : 0); rec.d = false; if (r && r.br != null) rec.br = r.br;
           recs[id] = rec; dirty[id] = 1; any = true;
         }
       });
       Object.keys(recs).forEach(function (id) {
         var r = recs[id];
         if (!r.d && !flat[id]) {
-          var t = norm(r); t.u = Math.max(now, r.u + 1); t.d = true;
+          var t = norm(r); t.u = Math.max(now, r.u + 1); t.d = true; if (r.br != null) t.br = r.br;
           recs[id] = t; dirty[id] = 1; any = true;
         }
       });
@@ -659,17 +663,28 @@
       var st = recs.settings && !recs.settings.d ? recs.settings : null;
       settings = { qr: (st && st.qr) || 'app', base: (st && st.base) || '', cats: cats };
     }
-    function applyRemote(list) {
+    /* sent: {id: подпись записи в момент отправки}. Ответ сервера по отправленным записям главный,
+       кроме случая, когда запись успели изменить, пока шёл запрос. */
+    function applyRemote(list, sent) {
       var changed = false;
       list.forEach(function (r) {
-        var l = recs[r.id];
-        delete r.r;
+        var l = recs[r.id], rv = r.r;
+        delete r.r; r.br = rv;
+        if (sent && sent[r.id] != null) {
+          if (l && sig(l) !== sent[r.id]) { l.br = rv; return; }
+          if (!l || sig(l) !== sig(r) || !!l.d !== !!r.d) changed = true;
+          recs[r.id] = r; delete dirty[r.id]; return;
+        }
         if (!l || r.u > l.u) {
           if (!l || sig(l) !== sig(r) || !!l.d !== !!r.d) changed = true;
           recs[r.id] = r; delete dirty[r.id];
-        } else if (r.u === l.u) { if (r.d && l.d && !r.n && l.n) recs[r.id] = r; delete dirty[r.id]; }
+        } else if (r.u === l.u) { if (r.d && l.d && !r.n && l.n) recs[r.id] = r; else l.br = rv; delete dirty[r.id]; }
       });
       return changed;
+    }
+    function deviceLabel() {
+      var ua = navigator.userAgent || '', pl = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android' : /Mac/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : 'Браузер';
+      return pl + (env.kind === 'pwa' ? ', приложение' : ', панель');
     }
 
     /* --- обмен с Home Assistant --- */
@@ -688,12 +703,20 @@
     function save() { reconcile(); if (pendingCount() && !dsince) dsince = Date.now(); persist(); renderSync(); scheduleSync(900); }
 
     function pushPull() {
-      var ids = Object.keys(dirty);
-      var list = ids.filter(function (id) { return recs[id]; }).map(function (id) { return Object.assign({}, recs[id]); });
-      return call('POST', '/api/korobki/sync', { since: since, records: list, device: device }).then(function (r) { return r.json(); }).then(function (j) {
-        var changed = applyRemote(j.records || []);
-        since = j.rev; everSynced = true;
+      var ids = Object.keys(dirty).filter(function (id) { return recs[id]; }), sent = {};
+      var list = ids.map(function (id) {
+        var x = Object.assign({}, recs[id]);
+        sent[id] = sig(x); x.dv = device; x.us = ++useq;   // кто правил и порядковый номер правки на этом устройстве
+        if (x.br == null) delete x.br;                      // br: ревизия записи на сервере, на которой основана правка
+        return x;
+      });
+      return call('POST', '/api/korobki/sync', { since: since, records: list, device: device, label: deviceLabel() }).then(function (r) { return r.json(); }).then(function (j) {
+        var changed = applyRemote(j.records || [], sent);
+        since = j.rev; everSynced = true; nconf = j.nconf || 0;
         S.stale = !!(j.version && VERSION.indexOf('__') !== 0 && j.version !== VERSION);
+        var nc = (j.conflicts || []).length;
+        if (nc) toast('Конфликт правок: ' + nc + '. Подробности в Сервисе.');
+        else if (j.fixes) toast('Сервер поправил структуру: записей ' + j.fixes + '. Подробности в журнале.');
         if (changed) { buildTree(); render(); }
         doPersist();
       });
@@ -1074,6 +1097,8 @@
       S.svc.stats = null; S.svc.statsErr = false;
       try { if (navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(function (v) { S.svc.persisted = v; refreshSvc(); }); } catch (e) {}
       try { if (navigator.storage && navigator.storage.estimate) navigator.storage.estimate().then(function (e) { S.svc.est = e; refreshSvc(); }); } catch (e) {}
+      S.svc.log = null;
+      call('GET', '/api/korobki/log').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j) { j.conflicts = j.conflicts || []; j.log = j.log || []; j.devices = j.devices || {}; nconf = j.conflicts.length; } S.svc.log = j; refreshSvc(); renderSync(); }).catch(function () {});
       call('GET', '/api/korobki/stats').then(function (r) { return r.json(); }).then(function (j) { S.svc.stats = j; refreshSvc(); }).catch(function () { S.svc.statsErr = true; refreshSvc(); });
     }
     function refreshSvc() { if (S.sheet && S.sheet.type === 'svc') render(); }
@@ -1084,10 +1109,61 @@
       }).catch(function () { S.svc.busy = ''; toast('Нет связи с Home Assistant'); render(); });
     }
     function mb(b) { return b < 1048576 ? Math.max(1, Math.round(b / 1024)) + ' КБ' : (b / 1048576).toFixed(b < 10485760 ? 1 : 0) + ' МБ'; }
+    /* --- конфликты правок и журнал синхронизации --- */
+    var FNAME = { n: 'Название', q: 'Количество', note: 'Пометка', tg: 'Категории', c: 'Цвет', ph: 'Фото', p: 'Расположение', d: 'Удалена', qr: 'QR', base: 'Адрес' };
+    function fmtT(t) { return new Date(t).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); }
+    function devName(dv) {
+      var lg = S.svc.log, dd = lg && lg.devices && lg.devices[dv];
+      return dd && dd.label ? dd.label : dv ? dv.slice(0, 6) : 'неизвестное';
+    }
+    function fmtVal(f, r) {
+      var v = r[f];
+      if (f === 'tg') return (v || []).map(function (id) { var k = catById(id); return k ? '#' + k.n : '?'; }).join(', ') || '—';
+      if (f === 'ph') return (v || []).length ? (v || []).length + ' шт.' : '—';
+      if (f === 'd') return v ? 'да' : 'нет';
+      if (f === 'p') { var pn = v && findNode(root, v); return pn ? pn.n : '—'; }
+      return v == null || v === '' ? '—' : String(v);
+    }
+    function conflictHtml(c) {
+      var k = c.kept, l = c.lost, nm = k.n || l.n || '(без названия)';
+      function from(dv) { return dv === device ? 'с этого устройства' : 'с «' + devName(dv) + '»'; }
+      var who = c.win === 'device' ? 'Правка ' + from(c.wdev) + ' перезаписала правку ' + from(c.ldev) + '.' : 'Правка ' + from(c.ldev) + ' не применилась: на сервере более поздняя ' + from(c.wdev) + '.';
+      var rows = c.fields.filter(function (f) { return f !== 'o'; }).map(function (f) {
+        return '<div class="cdiff"><b>' + (FNAME[f] || f) + ':</b> сейчас «' + esc(fmtVal(f, k)) + '», другая версия «' + esc(fmtVal(f, l)) + '»</div>';
+      }).join('');
+      return '<div class="cbox"><div class="cname">' + esc(nm) + ' <span class="hint">' + fmtT(c.t) + '</span></div><div class="hint">' + esc(who) + '</div>' + rows +
+        '<div class="actions"><button class="btn primary" data-cres="' + c.id + '">Вернуть другую версию</button><button class="btn" data-cdis="' + c.id + '">Оставить как есть</button></div></div>';
+    }
+    function logLine(e) {
+      var p = [];
+      if (e.sent) p.push('отправлено ' + e.sent + (e.acc !== e.sent ? ', принято ' + e.acc : ''));
+      if (e.pull) p.push('получено ' + e.pull);
+      if (e.con) p.push('конфликтов ' + e.con);
+      if (e.fix) p.push('исправлений ' + e.fix);
+      if (e.ign) p.push('отклонено ' + e.ign);
+      if (e.rej) p.push('негодных ' + e.rej);
+      if (e.clk) p.push('часы устройства спешат');
+      return '<div class="logrow"><span class="hint">' + fmtT(e.t) + '</span> ' + esc(e.lb || e.dev || '?') + ': ' + esc(p.join(', ') || 'без изменений') + '</div>';
+    }
+    function applyLost(cid) {
+      var lg = S.svc.log, c = lg && lg.conflicts.filter(function (x) { return x.id === cid; })[0];
+      if (!c) return;
+      var l = recs[c.rid], x = norm(c.lost);
+      x.d = !!c.lost.d; x.u = Math.max(Date.now(), l ? l.u + 1 : 0); if (l && l.br != null) x.br = l.br;
+      recs[c.rid] = x; dirty[c.rid] = 1; if (!dsince) dsince = Date.now();
+      buildTree(); persist(); dropConflict(cid); toast('Версия возвращена'); scheduleSync(300);
+    }
+    function dropConflict(cid) {
+      var lg = S.svc.log;
+      if (lg) { lg.conflicts = lg.conflicts.filter(function (x) { return x.id !== cid; }); nconf = lg.conflicts.length; }
+      call('POST', '/api/korobki/conflicts/' + cid, { action: 'dismiss' }).catch(function () {});
+      render();
+    }
     function svcHtml(head) {
       var v = S.svc, st = v.stats, n = pendingCount(), tr = trashList().length;
       var h = head('Сервис');
       if (v.busy) h += '<div class="hint">' + esc(v.busy) + '</div>';
+      if (v.log && v.log.conflicts.length) h += '<div class="sec">Конфликты правок (' + v.log.conflicts.length + ')</div><div class="hint">Две правки одной записи с разных устройств. Одна из них применена, вторая сохранена здесь: её можно вернуть.</div>' + v.log.conflicts.slice(0, 20).map(conflictHtml).join('');
       if (env.server) {
         h += '<div class="sec">Сервер</div><div class="hint">Адрес Home Assistant, с которым синхронизируется приложение. Пусто: тот же сайт, с которого открыто приложение. Нужен адрес того же Home Assistant, например домашний вместо внешнего. Чужой адрес должен разрешать доступ (cors_allowed_origins).</div>' +
           '<input class="field" id="srvUrl" type="url" inputmode="url" autocapitalize="off" autocomplete="off" placeholder="' + esc(location.origin) + '" value="' + esc(env.server.get()) + '" aria-label="Адрес сервера">' +
@@ -1113,6 +1189,7 @@
         (n ? '. Не отправлено: ' + n : '. Всё отправлено') + '</div>';
       if (n && dsince && Date.now() - dsince > 2 * 86400000) h += '<div class="warn2">Правки не отправлялись ' + Math.floor((Date.now() - dsince) / 86400000) + ' дн. Подключитесь к сети и нажмите «Синхронизировать».</div>';
       h += '<div class="actions"><button class="btn" data-sync>Синхронизировать</button><button class="btn" data-trash>Корзина' + (tr ? ' (' + tr + ')' : '') + '</button></div>';
+      h += '<div class="sec">Журнал синхронизации</div>' + (v.log ? (v.log.log.length ? v.log.log.slice(0, 20).map(logLine).join('') : '<div class="hint">Пока пусто</div>') : '<div class="hint">Загружаю…</div>');
       h += '<div class="sec">Резервная копия</div><div class="hint">Файл со всеми местами, коробками, вещами и категориями. «С фото» файл больше. Фото, которых нет на устройстве, берутся с сервера.</div>' +
         '<div class="actions"><button class="btn" data-export="0"' + (v.busy ? ' disabled' : '') + '>Скачать копию</button><button class="btn" data-export="1"' + (v.busy ? ' disabled' : '') + '>Копия с фото</button></div>';
       if (v.exp) h += '<div class="svcrow"><div class="hint">Готово: ' + esc(v.exp.name) + ', ' + mb(v.exp.size) + (v.exp.missing ? '. Без фото: ' + v.exp.missing + ' (не нашлись)' : '') + '</div><button class="btn primary" data-saveexp>Сохранить файл</button></div>';
@@ -1458,6 +1535,8 @@
         msg = 'Ожидает отправки: ' + n + (days >= 2 ? '. Не уходит уже ' + days + ' дн.' : '') + '. Нажмите, чтобы отправить.';
       } else if (S.stale) {
         st = '#7e57c2'; icon = 'refresh'; act = 'reload'; msg = 'Вышла новая версия панели. Нажмите, чтобы обновить.';
+      } else if (nconf) {
+        st = '#fb8c00'; icon = 'cloudok'; act = 'svc'; msg = 'Синхронизировано, но есть конфликты правок: ' + nconf + '. Нажмите, чтобы посмотреть.';
       } else {
         st = '#43a047'; icon = 'cloudok';
         msg = 'Всё синхронизировано' + (lastSync ? ' в ' + new Date(lastSync).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '') + '.';
@@ -1616,7 +1695,7 @@
       if (q('[data-sync]')) { sync(); return; }
       if (q('#netBtn')) {
         toast(netInfo.msg);
-        if (netInfo.act === 'sync') sync(); else if (netInfo.act === 'reauth') env.reauth(); else if (netInfo.act === 'reload') location.reload();
+        if (netInfo.act === 'sync') sync(); else if (netInfo.act === 'reauth') env.reauth(); else if (netInfo.act === 'reload') location.reload(); else if (netInfo.act === 'svc') { S.sheet = { type: 'svc', id: 'root', back: null }; S.conf = null; render(); loadSvc(); }
         return;
       }
       if (q('[data-reauth]') && env.reauth) { env.reauth(); return; }
@@ -1629,6 +1708,8 @@
         }).catch(function (x) { S.svc.lsrvErr = x && x.message === 'Failed to fetch' ? 'Нет связи с этим адресом (проверьте https и сертификат).' : (x && x.message) || 'Ошибка'; render(); });
         return;
       }
+      if ((el = q('[data-cres]'))) { applyLost(el.getAttribute('data-cres')); return; }
+      if ((el = q('[data-cdis]'))) { dropConflict(el.getAttribute('data-cdis')); return; }
       if ((q('[data-srvsave]') || q('[data-srvreset]')) && env.server) {
         var nu = q('[data-srvreset]') ? '' : ($('srvUrl') || {}).value;
         S.svc.srvErr = 'Проверяю…'; render();
@@ -1888,7 +1969,7 @@
         if (st && st.recs) {
           recs = st.recs; dirty = {};
           (st.dirty || []).forEach(function (i) { dirty[i] = 1; });
-          upq = st.upq || []; delq = st.delq || []; since = st.since || 0; device = st.device || ''; everSynced = !!st.synced; dsince = st.dsince || 0;
+          upq = st.upq || []; delq = st.delq || []; since = st.since || 0; device = st.device || ''; useq = st.useq || 0; nconf = st.nconf || 0; everSynced = !!st.synced; dsince = st.dsince || 0;
         }
         if (!device) device = uid() + uid();
         buildTree(); loaded = true; render(); requestPersist();
@@ -1938,7 +2019,8 @@
       function can() { return !S.sheet && !!(S.path.length || S.mode || S.q.trim()); }
       host.addEventListener('touchstart', function (e) {
         st = null; locked = false; dx = 0;
-        if (e.touches.length !== 1 || e.touches[0].clientX > 28 || !can()) return;
+        if (e.touches.length !== 1 || e.touches[0].clientX > window.innerWidth / 2 || !can()) return;
+        if (e.target && e.target.closest && e.target.closest('input, textarea, select, [data-nav]')) return;
         st = { x: e.touches[0].clientX, y: e.touches[0].clientY }; tm = Date.now(); wrap.style.transition = 'none';
       }, { passive: true });
       host.addEventListener('touchmove', function (e) {
@@ -1956,7 +2038,7 @@
         if (!st) return;
         var d = dx, fast = d / Math.max(1, Date.now() - tm) > 0.5, w = window.innerWidth; st = null;
         wrap.style.transition = 'transform .18s ease';
-        if (locked && (d > w * 0.3 || (fast && d > 40))) {
+        if (locked && (d > w * 0.25 || (fast && d > 40))) {
           wrap.style.transform = 'translateX(' + w + 'px)';
           setTimeout(function () {
             goBack(); wrap.style.transition = 'none'; wrap.style.transform = 'translateX(-30px)'; wrap.style.opacity = '.6'; wrap.style.boxShadow = '';
