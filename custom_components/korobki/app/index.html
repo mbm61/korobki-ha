@@ -24,9 +24,11 @@
     --divider-color:#2c333d; --primary-color:#6f9bd1; --error-color:#ef5350; }
   :root[data-theme="light"] { color-scheme: light; }
   /* Документ не прокручивается: прокручивается только панель. Так iOS не оставляет пустую полосу после клавиатуры */
-  html, body { margin:0; position:fixed; inset:0; width:100%; height:100%; overflow:hidden; overscroll-behavior:none;
+  html, body { margin:0; position:fixed; inset:0 0 -200px 0; width:100%; height:100%; overflow:hidden; overscroll-behavior:none;
     background:var(--primary-background-color); color:var(--primary-text-color); font:15px -apple-system, system-ui, sans-serif; }
-  korobki-panel { display:block; position:fixed; inset:0; }
+  /* iOS 26 в режиме приложения может отдать странице меньше высоты экрана: берём «большую» высоту окна (lvh) и тянем фон вниз */
+  html, body { height:100vh; height:100lvh; min-height:-webkit-fill-available; }
+  korobki-panel { display:block; position:fixed; top:0; left:0; right:0; bottom:0; height:auto; min-height:100vh; min-height:100lvh; }
   /* Фон-стекло рисует html: иначе полоса под панелью (если iOS отдаёт ей меньше высоты) была бы другого цвета */
   html { background: linear-gradient(170deg, color-mix(in srgb, #5b8cff 16%, var(--primary-background-color)), color-mix(in srgb, #b06bff 13%, var(--primary-background-color)) 55%, color-mix(in srgb, #ff8fb1 14%, var(--primary-background-color))) fixed; }
   body { background: transparent; }
