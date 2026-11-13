@@ -206,7 +206,9 @@
     '@media (prefers-reduced-motion: reduce) { .card, .th.wait { transition: none; animation: none; } }',
     /* ===== Дизайн 0.9.0: Liquid Glass (стекло, мягкое размытие, крупные скругления). Функции и структура не менялись ===== */
     ':host { --glass: color-mix(in srgb, var(--card) 58%, transparent); --glass2: color-mix(in srgb, var(--card) 82%, transparent); --edge: color-mix(in srgb, var(--fg) 9%, transparent); --hi: color-mix(in srgb, var(--card) 85%, #fff); --shadow: 0 8px 28px rgba(70, 60, 140, .12);',
-    '  background: linear-gradient(170deg, color-mix(in srgb, #5b8cff 16%, var(--bg)), color-mix(in srgb, #b06bff 13%, var(--bg)) 55%, color-mix(in srgb, #ff8fb1 14%, var(--bg))); background-attachment: fixed; }',
+    '  --kb-grad: linear-gradient(170deg, color-mix(in srgb, #5b8cff 16%, var(--bg)), color-mix(in srgb, #b06bff 13%, var(--bg)) 55%, color-mix(in srgb, #ff8fb1 14%, var(--bg)));',
+    '  background: var(--kb-bg, var(--kb-grad)); background-attachment: fixed; }',
+    '.search svg { z-index: 1; }',
     '.top { margin-inline: -16px; padding-inline: 16px; background: linear-gradient(to bottom, color-mix(in srgb, var(--bg) 88%, transparent) 72%, transparent); }',
     'h1 { font: 800 clamp(28px, 8.6vw, 34px)/1.1 var(--f); letter-spacing: -0.03em; }',
     '.stat { font-size: 14px; }',
