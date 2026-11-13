@@ -44,27 +44,11 @@
 </form>
 <script>
 (function () {
-  var KEY = 'korobki-token', SKEY = 'korobki-server', LKEY = 'korobki-local', tok = '', BASE = '', LOCAL = '';
+  var KEY = 'korobki-token', SKEY = 'korobki-server', LKEY = 'korobki-local', tok = '', BASE = '';
   try { BASE = localStorage.getItem(SKEY) || ''; } catch (e) {}
-  try { LOCAL = localStorage.getItem(LKEY) || ''; } catch (e) {}
+  /* Локальный адрес убран в 0.8.0: чистим старую настройку */
+  try { localStorage.removeItem(LKEY); } catch (e) {}
   try { tok = localStorage.getItem(KEY) || ''; } catch (e) {}
-  /* Локальный адрес: сначала пробуем его (1,5 с), при неудаче работаем по основному и перепроверяем раз в 30 с */
-  var useLocal = null, lastTry = 0, lastOk = 0, probing = null;
-  function probe() {
-    if (probing) return probing;
-    var ctl = window.AbortController ? new AbortController() : null, t = setTimeout(function () { if (ctl) ctl.abort(); }, 1500);
-    probing = fetch(LOCAL + '/korobki_app/manifest.json', { cache: 'no-store', signal: ctl ? ctl.signal : undefined })
-      .then(function (r) { clearTimeout(t); return r.ok; }, function () { clearTimeout(t); return false; })
-      .then(function (ok) { useLocal = ok; lastTry = Date.now(); if (ok) lastOk = lastTry; probing = null; return ok; });
-    return probing;
-  }
-  function pickBase() {
-    if (!LOCAL) return Promise.resolve(BASE);
-    var now = Date.now();
-    if (useLocal === true && now - lastOk < 90000) return Promise.resolve(LOCAL);
-    if (useLocal === false && now - lastTry < 30000) return Promise.resolve(BASE);
-    return probe().then(function (ok) { return ok ? LOCAL : BASE; });
-  }
   var login = document.getElementById('login');
   function req(method, path, body, type, signal) {
     var h = { Authorization: 'Bearer ' + tok }, init = { method: method, headers: h };
@@ -73,17 +57,7 @@
       if (body instanceof Blob) { init.body = body; h['Content-Type'] = type || 'image/jpeg'; }
       else { init.body = JSON.stringify(body); h['Content-Type'] = 'application/json'; }
     }
-    return pickBase().then(function (base) {
-      var p = fetch(base + path, init);
-      if (LOCAL && base === LOCAL) {
-        return p.then(function (r) { lastOk = Date.now(); return r; }, function (e) {
-          if (signal && signal.aborted) throw e;
-          useLocal = false; lastTry = Date.now();
-          return fetch(BASE + path, init);
-        });
-      }
-      return p;
-    });
+    return fetch(BASE + path, init);
   }
   function start() {
     login.hidden = true;
@@ -95,22 +69,6 @@
       el.transport = {
         kind: 'pwa', request: req,
         server: {
-          local: {
-            get: function () { return LOCAL; },
-            active: function () { return !LOCAL ? 'global' : useLocal === true ? 'local' : useLocal === false ? 'global' : '?'; },
-            set: function (v) {
-              v = (v || '').trim().replace(/\/+$/, '');
-              if (!v) { LOCAL = ''; useLocal = null; try { localStorage.removeItem(LKEY); } catch (e) {} return Promise.resolve(); }
-              if (!/^https?:\/\//i.test(v)) return Promise.reject(new Error('Адрес должен начинаться с https://'));
-              if (location.protocol === 'https:' && /^http:/i.test(v)) return Promise.reject(new Error('Приложение открыто по https, поэтому и локальный адрес должен быть https:// (иначе iOS блокирует запросы).'));
-              return fetch(v + '/api/korobki/sync', { method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: JSON.stringify({ since: 0, records: [] }) }).then(function (r) {
-                if (r.status === 401 || r.status === 403) throw new Error('Токен не подошёл на этом адресе');
-                if (!r.ok) throw new Error('Ошибка ' + r.status);
-                LOCAL = v; useLocal = true; lastTry = lastOk = Date.now();
-                try { localStorage.setItem(LKEY, v); } catch (e) {}
-              });
-            }
-          },
           get: function () { return BASE; },
           set: function (v) {
             v = (v || '').trim().replace(/\/+$/, '');

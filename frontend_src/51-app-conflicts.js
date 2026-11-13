@@ -58,14 +58,6 @@
           '<input class="field" id="srvUrl" type="url" inputmode="url" autocapitalize="off" autocomplete="off" placeholder="' + esc(location.origin) + '" value="' + esc(env.server.get()) + '" aria-label="Адрес сервера">' +
           (v.srvErr ? '<div class="warn2">' + esc(v.srvErr) + '</div>' : '') +
           '<div class="actions"><button class="btn primary" data-srvsave>Проверить и сохранить</button><button class="btn" data-srvreset>Как на этом сайте</button></div>';
-        if (env.server.local) {
-          var act = env.server.local.active(), lv = v.lval != null ? v.lval : env.server.local.get();
-          h += '<div class="sec">Локальный адрес (пробуется первым)</div><div class="hint">Дома приложение сначала обращается по этому адресу, а если он не отвечает (вы не в домашней сети), переходит на основной. Адрес должен быть https:// с рабочим сертификатом, иначе iOS его заблокирует. Название Wi-Fi сети веб-приложение прочитать не может, поэтому доступность проверяется самим обращением.</div>' +
-            '<input class="field" id="srvLocal" type="url" inputmode="url" autocapitalize="off" autocomplete="off" placeholder="https://ha.home.example" value="' + esc(lv) + '" aria-label="Локальный адрес сервера">' +
-            (v.lsrvErr ? '<div class="warn2">' + esc(v.lsrvErr) + '</div>' : '') +
-            (env.server.local.get() ? '<div class="hint">Сейчас: ' + (act === 'local' ? 'подключено по локальному адресу' : act === 'global' ? 'подключено по основному адресу (локальный недоступен)' : 'ещё не проверялось') + '</div>' : '') +
-            '<div class="actions"><button class="btn primary" data-lsave>Проверить и сохранить</button><button class="btn" data-lreset>Убрать</button></div>';
-        }
       }
       if (env.theme) {
         var tm = env.theme();
@@ -82,9 +74,30 @@
       h += '<div class="sec">Резервная копия</div><div class="hint">Файл со всеми местами, коробками, вещами и категориями. «С фото» файл больше. Фото, которых нет на устройстве, берутся с сервера.</div>' +
         '<div class="actions"><button class="btn" data-export="0"' + (v.busy ? ' disabled' : '') + '>Скачать копию</button><button class="btn" data-export="1"' + (v.busy ? ' disabled' : '') + '>Копия с фото</button></div>';
       if (v.exp) h += '<div class="svcrow"><div class="hint">Готово: ' + esc(v.exp.name) + ', ' + mb(v.exp.size) + (v.exp.missing ? '. Без фото: ' + v.exp.missing + ' (не нашлись)' : '') + '</div><button class="btn primary" data-saveexp>Сохранить файл</button></div>';
+      /* Автокопии на сервере: состояние последней, список, кнопка «сделать сейчас» */
+      var bk = v.bk, lb = bk && bk.last;
+      h += '<div class="sec">Автокопия на сервере</div>';
+      if (!bk) h += '<div class="hint">' + (v.bkErr ? 'Состояние автокопий недоступно (нужна версия сервера 0.8.0 и связь).' : 'Проверяю…') + '</div>';
+      else {
+        h += '<div class="hint">Home Assistant сам сохраняет копию данных раз в ' + (bk.hours || 24) + ' ч в папку ' + esc(bk.dir) + ' (хранится последних: ' + bk.keep + '). Фото в неё не входят.</div>';
+        if (lb && lb.ok) h += '<div class="hint">Последняя: ' + new Date(lb.t).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + (lb.size ? ', ' + mb(lb.size) : '') + (lb.recs ? ', записей: ' + lb.recs : '') + '. Всего копий: ' + bk.count + '.</div>';
+        else if (lb) h += '<div class="warn2">Последняя копия не создана: ' + esc(lb.error || 'ошибка') + '. В Home Assistant создано уведомление.</div>';
+        else h += '<div class="warn2">Автокопий ещё нет.</div>';
+      }
+      h += '<div class="actions"><button class="btn" data-bkrun' + (v.busy || !bk ? ' disabled' : '') + '>Сделать копию сейчас</button></div>';
       h += '<div class="sec">Восстановление</div><div class="hint">Записи из копии вернутся и заменят одноимённые. То, чего в копии нет, останется.</div>' +
         '<div class="actions"><button class="btn" data-pickimp>Выбрать файл копии</button></div>';
-      if (v.imp) h += '<div class="svcrow"><div class="hint">В файле записей: ' + v.imp.n + (v.imp.ph ? ', фото: ' + v.imp.ph : '') + (v.imp.date ? ', от ' + esc(v.imp.date.slice(0, 10)) : '') + '</div><button class="btn danger ask" data-doimport>Восстановить</button></div>';
+      if (v.imp && v.imp.fatal) h += '<div class="warn2">Восстановить нельзя: ' + esc(v.imp.fatal) + '</div>';
+      else if (v.imp) {
+        var im = v.imp, nbad = im.bad.length, notes = [];
+        if (nbad) notes.push('будут пропущены записи с ошибками: ' + nbad);
+        if (im.tgDrop) notes.push('ссылок на несуществующие категории (уберутся): ' + im.tgDrop);
+        if (im.phMiss) notes.push('фото без файла в копии: ' + im.phMiss + ' (возьмутся с сервера, если они там есть)');
+        if (im.phBadN) notes.push('повреждённых фото в файле (пропустятся): ' + im.phBadN);
+        h += '<div class="svcrow"><div class="hint">Проверка пройдена. В файле записей: ' + im.n + (im.ph ? ', фото: ' + im.ph : '') + (im.date ? ', от ' + esc(im.date.slice(0, 10)) : '') + '</div><button class="btn danger ask" data-doimport>Восстановить</button></div>';
+        if (notes.length) h += '<div class="warn2">' + notes.map(esc).join('<br>') + '</div>';
+        if (nbad) h += '<div class="hint">Например: ' + im.bad.slice(0, 4).map(function (b) { return esc(b.id.slice(0, 8)) + ' — ' + esc(b.why); }).join('; ') + '</div>';
+      }
       h += '<div class="sec">Хранилище на устройстве</div><div class="hint">' +
         (v.persisted === true ? 'Защищено: система не удалит данные сама.' : v.persisted === false ? 'Система может очистить данные при нехватке места. Установите приложение на экран «Домой» и держите синхронизацию.' : 'Проверяю…') +
         (v.est && v.est.usage != null ? ' Занято: ' + mb(v.est.usage) + '.' : '') + '</div>';

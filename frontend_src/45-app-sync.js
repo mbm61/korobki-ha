@@ -13,23 +13,39 @@
     function scheduleSync(ms) { clearTimeout(syncT); syncT = setTimeout(sync, ms || 800); }
     function save() { reconcile(); if (pendingCount() && !dsince) dsince = Date.now(); persist(); renderSync(); scheduleSync(900); }
 
+    /* Пакетная синхронизация: отправляем по BATCH записей, забираем чужие порциями (more + курсор since),
+       повторяем, пока не останется неотправленного и непринятого. Защита от зацикливания: нужен прогресс. */
+    var BATCH = 500;
     function pushPull() {
-      var ids = Object.keys(dirty).filter(function (id) { return recs[id]; }), sent = {};
-      var list = ids.map(function (id) {
-        var x = Object.assign({}, recs[id]);
-        sent[id] = sig(x); x.dv = device; x.us = ++useq;   // кто правил и порядковый номер правки на этом устройстве
-        if (x.br == null) delete x.br;                      // br: ревизия записи на сервере, на которой основана правка
-        return x;
-      });
-      return call('POST', '/api/korobki/sync', { since: since, records: list, device: device, label: deviceLabel() }).then(function (r) { return r.json(); }).then(function (j) {
-        var changed = applyRemote(j.records || [], sent);
-        since = j.rev; everSynced = true; nconf = j.nconf || 0;
-        S.stale = !!(j.version && VERSION.indexOf('__') !== 0 && j.version !== VERSION);
-        var nc = (j.conflicts || []).length;
-        if (nc) toast('Конфликт правок: ' + nc + '. Подробности в Сервисе.');
-        else if (j.fixes) toast('Сервер поправил структуру: записей ' + j.fixes + '. Подробности в журнале.');
-        if (changed) { buildTree(); render(); }
-        doPersist();
+      var tot = { nc: 0, fixes: 0 }, steps = 0;
+      function step() {
+        var ids = Object.keys(dirty).filter(function (id) { return recs[id]; }), sent = {};
+        var left = ids.length;
+        var list = ids.slice(0, BATCH).map(function (id) {
+          var x = Object.assign({}, recs[id]);
+          sent[id] = sig(x); x.dv = device; x.us = ++useq;   // кто правил и порядковый номер правки на этом устройстве
+          if (x.br == null) delete x.br;                      // br: ревизия записи на сервере, на которой основана правка
+          return x;
+        });
+        var prevSince = since;
+        return call('POST', '/api/korobki/sync', { since: since, records: list, device: device, label: deviceLabel() }).then(function (r) { return r.json(); }).then(function (j) {
+          var changed = applyRemote(j.records || [], sent);
+          since = j.rev; everSynced = true; nconf = j.nconf || 0;
+          S.stale = !!(j.version && VERSION.indexOf('__') !== 0 && j.version !== VERSION);
+          tot.nc += (j.conflicts || []).length; tot.fixes += j.fixes || 0;
+          if (changed) { buildTree(); render(); }
+          doPersist();
+          var more = !!j.more, leftNow = Object.keys(dirty).filter(function (id) { return recs[id]; }).length;
+          var progress = more ? since !== prevSince : leftNow < left;
+          if ((more || leftNow > 0) && progress && ++steps < 200) {
+            if (leftNow > 0 || more) { net = 'sync'; renderSync(); }
+            return step();
+          }
+        });
+      }
+      return step().then(function () {
+        if (tot.nc) toast('Конфликт правок: ' + tot.nc + '. Подробности в Сервисе.');
+        else if (tot.fixes) toast('Сервер поправил структуру: записей ' + tot.fixes + '. Подробности в журнале.');
       });
     }
     function uploadPhotos() {

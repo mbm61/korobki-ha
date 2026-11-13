@@ -9,7 +9,7 @@
 - добавляет в боковое меню панель «Коробки» и отдаёт устанавливаемое приложение /korobki_app/.
 
 Устройство модулей: const (константы), storage (хранилище), model (проверка и слияние записей),
-views_sync, views_photo, views_app (HTTP), gc (уборка), voice (голосовой поиск).
+views_sync, views_photo, views_app (HTTP), gc (уборка), backup (копии по расписанию), voice (голосовой поиск).
 
 Подключение: в configuration.yaml добавить строку  korobki:  и перезапустить HA.
 """
@@ -25,6 +25,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 
 from .const import DOMAIN, PANEL_URL_PATH, STATIC_URL, STORAGE_VERSION
+from .backup import BackupView, async_setup_backup
 from .gc import CleanupView, StatsView, async_setup_gc
 from .storage import KorobkiStore, migrate
 from .views_app import AppView, PanelJsView
@@ -55,7 +56,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     hass.data[DOMAIN] = {"store": store, "data": data, "photo_dir": photo_dir, "version": version}
 
     for view in (
-        SyncView(hass), LogView(hass), ConflictView(hass), StatsView(hass), CleanupView(hass),
+        SyncView(hass), LogView(hass), ConflictView(hass), StatsView(hass), CleanupView(hass), BackupView(hass),
         PhotoCollectionView(hass, photo_dir), PhotoView(hass, photo_dir), PhotoThumbView(hass, photo_dir),
         AppView(hass, base / "app"), PanelJsView(hass, base / "frontend" / "korobki-panel.js", version),
     ):
@@ -73,5 +74,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     _LOGGER.debug("Коробки: панель зарегистрирована")
 
     await async_setup_gc(hass)
+    await async_setup_backup(hass)
     await async_setup_voice(hass)
     return True

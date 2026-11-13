@@ -17,6 +17,7 @@
       if (q('[data-pickimp]')) { $('impick').click(); return; }
       if (q('[data-doimport]')) { doImport(); return; }
       if (q('[data-cleanup]')) { doCleanup(); return; }
+      if (q('[data-bkrun]')) { runBackup(); return; }
       if (q('[data-persist]')) { requestPersist(); setTimeout(loadSvc, 600); return; }
       if ((el = q('[data-move]'))) { S.sheet = { type: 'move', id: el.getAttribute('data-move'), back: S.sheet }; render(); return; }
       if ((el = q('[data-moveto]'))) { if (S.sheet) doMove(S.sheet.id, el.getAttribute('data-moveto')); return; }
@@ -39,17 +40,14 @@
         return;
       }
       if (q('[data-reauth]') && env.reauth) { env.reauth(); return; }
-      if (q('[data-logout]') && env.logout) { env.logout(); return; }
-      if ((q('[data-lsave]') || q('[data-lreset]')) && env.server && env.server.local) {
-        var lnu = q('[data-lreset]') ? '' : (($('srvLocal') || {}).value || '');
-        S.svc.lval = lnu; S.svc.lsrvErr = 'Проверяю…'; render();
-        env.server.local.set(lnu).then(function () {
-          S.svc.lsrvErr = ''; S.svc.lval = null; render(); toast(lnu.trim() ? 'Локальный адрес сохранён' : 'Локальный адрес убран');
-        }).catch(function (x) { S.svc.lsrvErr = x && x.message === 'Failed to fetch' ? 'Нет связи с этим адресом (проверьте https и сертификат).' : (x && x.message) || 'Ошибка'; render(); });
+      if (q('[data-logout]') && env.logout) {
+        /* Подтверждение выхода: первое нажатие меняет подпись, второе (в течение 4 с) выходит */
+        var lb = q('[data-logout]');
+        if (lb.getAttribute('data-ask') === '1') { env.logout(); return; }
+        lb.setAttribute('data-ask', '1'); lb.textContent = 'Точно выйти?'; lb.style.color = 'var(--danger)';
+        setTimeout(function () { if (lb.isConnected) { lb.removeAttribute('data-ask'); lb.textContent = 'Выйти'; lb.style.color = ''; } }, 4000);
         return;
       }
-      if ((el = q('[data-cres]'))) { applyLost(el.getAttribute('data-cres')); return; }
-      if ((el = q('[data-cdis]'))) { dropConflict(el.getAttribute('data-cdis')); return; }
       if ((q('[data-srvsave]') || q('[data-srvreset]')) && env.server) {
         var nu = q('[data-srvreset]') ? '' : ($('srvUrl') || {}).value;
         S.svc.srvErr = 'Проверяю…'; render();

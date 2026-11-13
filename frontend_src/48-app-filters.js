@@ -8,7 +8,7 @@
           if (c.t !== 'item') return;
           var has = (c.tg || []).filter(catById);
           if (f.nocat && has.length) return;
-          if (f.cats.length && !f.cats.every(function (id) { return (c.tg || []).indexOf(id) > -1; })) return;
+          if (f.cats.length && !f.cats.some(function (id) { return (c.tg || []).indexOf(id) > -1; })) return;
           if (f.nophoto && (c.ph || []).length) return;
         } else if (finding && !q && c.t !== 'item') return;
         hits.push({ c: c, path: c.t === 'item' ? ids : ids.concat(c.id), where: names, a: a });
@@ -20,7 +20,7 @@
       if (finding) {
         h += '<div class="form fgroup" style="--a:' + DEF + '">';
         if (settings.cats.length) {
-          h += '<div class="sec">Категории (все выбранные сразу)</div><div class="chips">' + settings.cats.map(function (c) {
+          h += '<div class="sec">Категории (любая из выбранных)</div><div class="chips">' + settings.cats.map(function (c) {
             var on = f.cats.indexOf(c.id) > -1;
             return '<button type="button" class="chip' + (on ? ' on' : '') + '" style="--c:' + c.c + '" data-fcat="' + c.id + '" aria-pressed="' + on + '">#' + esc(c.n) + '</button>';
           }).join('') + '</div>';

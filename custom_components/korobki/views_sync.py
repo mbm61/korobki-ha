@@ -8,7 +8,7 @@ from aiohttp import web
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN, EVENT_UPDATED, LOG_LIMIT, MAX_RECORDS_PER_SYNC
+from .const import DOMAIN, EVENT_UPDATED, LOG_LIMIT, MAX_RECORDS_PER_SYNC, PULL_LIMIT
 from .model import apply_batch
 
 
@@ -17,7 +17,7 @@ class SyncView(HomeAssistantView):
 
     Запрос: {since, device, label, records:[...]}. Каждая запись может нести dv (id устройства), us (счётчик правок
     устройства) и br (ревизия записи, на которой основана правка). Правила слияния описаны в model.py.
-    Ответ: {rev, version, records, conflicts (новые), nconf (нерешённые), fixes (исправлений графа)}.
+    Ответ: {rev (курсор: следующий since), head (текущая ревизия), more (есть ещё записи для скачивания), rest (сколько присланных записей не принято), version, records, conflicts (новые), nconf (нерешённые), fixes (исправлений графа)}.
     """
 
     cors_allowed = True  # локальный и внешний адреса — разные источники для браузера
@@ -40,14 +40,26 @@ class SyncView(HomeAssistantView):
             since = 0
         device = str(body.get("device") or "")[:64]
         label = str(body.get("label") or "")[:40]
-        incoming = body.get("records", [])[:MAX_RECORDS_PER_SYNC]
+        all_in = body.get("records", [])
+        incoming = all_in[:MAX_RECORDS_PER_SYNC]
+        rest = len(all_in) - len(incoming)  # не принято в этом запросе: клиент пришлёт следующим
 
         st = self._hass.data[DOMAIN]
         d, store = st["data"], st["store"]
         now = int(time.time() * 1000)
         res = apply_batch(d, incoming, device, now)
         recs = d["recs"]
-        out = [r for r in recs.values() if r["r"] > since or r["id"] in res["touched"]]
+        fresh = sorted((r for r in recs.values() if r["r"] > since), key=lambda r: r["r"])
+        cursor, more = d["rev"], False
+        if len(fresh) > PULL_LIMIT:
+            # отдаём порцию; записи с одной ревизией не разрываем, курсор = последняя отданная ревизия
+            cursor, more = fresh[PULL_LIMIT - 1]["r"], True
+            fresh = [r for r in fresh if r["r"] <= cursor]
+        out = {r["id"]: r for r in fresh}
+        for rid in res["touched"]:
+            if rid in recs:
+                out[rid] = recs[rid]
+        out = list(out.values())
 
         if device:
             d["devices"][device] = {"last": now, "label": label or d["devices"].get(device, {}).get("label", "")}
@@ -64,7 +76,7 @@ class SyncView(HomeAssistantView):
         if res["changed"]:
             self._hass.bus.async_fire(EVENT_UPDATED, {"rev": d["rev"]})
         return self.json({
-            "rev": d["rev"], "version": st["version"], "records": out,
+            "rev": cursor, "head": d["rev"], "more": more, "rest": rest, "version": st["version"], "records": out,
             "conflicts": res["conflicts"], "nconf": len(d["conflicts"]), "fixes": len(res["fixes"]),
             "fixlist": res["fixes"][:20],
         })

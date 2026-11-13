@@ -1,6 +1,7 @@
 """Фото: загрузка, выдача и удаление."""
 from __future__ import annotations
 
+import hashlib
 import secrets
 from pathlib import Path
 
@@ -16,12 +17,14 @@ def _is_jpeg(body: bytes) -> bool:
     return body[:3] == b"\xff\xd8\xff"
 
 
-def _photo_response(body: bytes) -> web.Response:
-    return web.Response(
-        body=body,
-        content_type="image/jpeg",
-        headers={"Cache-Control": "private, max-age=31536000, immutable"},
-    )
+def _photo_response(request: web.Request, body: bytes) -> web.Response:
+    """Отдаёт фото с ETag: браузер каждый раз спрашивает «не изменилось?» (304),
+    поэтому заменённое по тому же id фото не залипает в кэше (раньше был immutable на год)."""
+    etag = '"' + hashlib.sha1(body).hexdigest()[:20] + '"'
+    headers = {"Cache-Control": "private, no-cache", "ETag": etag}
+    if request.headers.get("If-None-Match") == etag:
+        return web.Response(status=304, headers=headers)
+    return web.Response(body=body, content_type="image/jpeg", headers=headers)
 
 
 class _PhotoBase(HomeAssistantView):
@@ -66,7 +69,7 @@ class PhotoView(_PhotoBase):
             body = await self._hass.async_add_executor_job(self._file(photo_id).read_bytes)
         except OSError:
             return self.json_message("Не найдено", 404)
-        return _photo_response(body)
+        return _photo_response(request, body)
 
     async def put(self, request: web.Request, photo_id: str) -> web.Response:
         """Загрузка фото с заранее известным id (приложение делало его без связи)."""
@@ -105,7 +108,7 @@ class PhotoThumbView(_PhotoBase):
                 body = await self._hass.async_add_executor_job(path.read_bytes)
             except OSError:
                 continue
-            return _photo_response(body)
+            return _photo_response(request, body)
         return self.json_message("Не найдено", 404)
 
     async def put(self, request: web.Request, photo_id: str) -> web.Response:
