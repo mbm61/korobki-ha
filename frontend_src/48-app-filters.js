@@ -18,11 +18,11 @@
       else if (f.sort === 'old') hits.sort(function (x, y) { return (x.c.o || 0) - (y.c.o || 0); });
       var h = '<div class="head"><h1>' + (finding ? 'Фильтры' : 'Поиск') + '</h1><div class="stat">' + (hits.length ? 'Найдено: ' + hits.length : 'Ничего не найдено') + '</div></div>';
       if (finding) {
-        h += '<div class="form fgroup" style="--a:' + DEF + '">';
+        h += '<div class="form fgroup" style="--a:' + esc(DEF) + '">';
         if (settings.cats.length) {
           h += '<div class="sec">Категории (любая из выбранных)</div><div class="chips">' + settings.cats.map(function (c) {
             var on = f.cats.indexOf(c.id) > -1;
-            return '<button type="button" class="chip' + (on ? ' on' : '') + '" style="--c:' + c.c + '" data-fcat="' + c.id + '" aria-pressed="' + on + '">#' + esc(c.n) + '</button>';
+            return '<button type="button" class="chip' + (on ? ' on' : '') + '" style="--c:' + esc(c.c) + '" data-fcat="' + esc(c.id) + '" aria-pressed="' + on + '">#' + esc(c.n) + '</button>';
           }).join('') + '</div>';
         }
         h += '<div class="chips"><button type="button" class="chip' + (f.nocat ? ' on' : '') + '" style="--c:#8d6e63" data-fnocat aria-pressed="' + f.nocat + '">Без категории</button>' +

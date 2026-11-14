@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from pathlib import Path
 
 from homeassistant.components import panel_custom
@@ -27,6 +28,7 @@ from homeassistant.helpers.typing import ConfigType
 from .const import DOMAIN, PANEL_URL_PATH, STATIC_URL, STORAGE_VERSION
 from .backup import BackupView, async_setup_backup
 from .gc import CleanupView, StatsView, async_setup_gc
+from .model import normalize
 from .storage import KorobkiStore, migrate
 from .views_app import AppView, PanelJsView
 from .views_photo import PhotoCollectionView, PhotoThumbView, PhotoView
@@ -42,7 +44,15 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Запуск интеграции."""
     store = KorobkiStore(hass, STORAGE_VERSION, DOMAIN)
     data = migrate(await store.async_load() or {})
-    if data["rev"] and "migrated" not in data:
+    # при каждом запуске чистим данные: недопустимые id, цвета, ссылки (старые версии, ручная правка файла)
+    def _bump() -> int:
+        data["rev"] += 1
+        return data["rev"]
+
+    startup_fixes = normalize(data, int(time.time() * 1000), _bump) if data["rev"] else []
+    if startup_fixes:
+        _LOGGER.warning("Коробки: при запуске исправлено записей: %d", len(startup_fixes))
+    if data["rev"] and ("migrated" not in data or startup_fixes):
         await store.async_save(data)
 
     photo_dir = Path(hass.config.path("korobki_photos"))

@@ -4,7 +4,9 @@
       booted = true; clearTimeout(bootT);
       dbGet('kv', 'state', function (st) {
         if (st && st.recs) {
-          recs = st.recs; dirty = {};
+          recs = {};
+          Object.keys(st.recs).forEach(function (k) { var r = st.recs[k]; if (okId(k) && r && r.id === k) { var x = Object.assign({}, r, norm(r)); recs[k] = x; } });   // очистка старых данных на устройстве
+          dirty = {};
           (st.dirty || []).forEach(function (i) { dirty[i] = 1; });
           upq = st.upq || []; delq = st.delq || []; since = st.since || 0; device = st.device || ''; useq = st.useq || 0; nconf = st.nconf || 0; everSynced = !!st.synced; dsince = st.dsince || 0;
         }

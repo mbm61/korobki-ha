@@ -72,16 +72,21 @@
     }
     function delBtn(id) {
       var ask = S.conf === id;
-      return '<button type="button" class="ib danger' + (ask ? ' ask' : '') + '" data-del="' + id + '" aria-label="Удалить" title="Удалить">' + svg('trash', 22) + (ask ? '<span>Точно удалить?</span>' : '') + '</button>';
+      return '<button type="button" class="ib danger' + (ask ? ' ask' : '') + '" data-del="' + esc(id) + '" aria-label="Удалить" title="Удалить">' + svg('trash', 22) + (ask ? '<span>Точно удалить?</span>' : '') + '</button>';
     }
     function nodeActions(n) {
-      return '<div class="actions">' + ib('data-qr="' + n.id + '"', 'qr', 'QR-этикетка') + ib('data-move="' + n.id + '"', 'move', 'Переместить') + ib('data-dup="' + n.id + '"', 'copy', 'Копировать') + delBtn(n.id) + '</div>';
+      return '<div class="actions">' + ib('data-qr="' + esc(n.id) + '"', 'qr', 'QR-этикетка') + ib('data-move="' + esc(n.id) + '"', 'move', 'Переместить') + ib('data-dup="' + esc(n.id) + '"', 'copy', 'Копировать') + delBtn(n.id) + '</div>';
     }
     function svg(k, s) {
       s = s || 24;
       return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ic[k] + '</svg>';
     }
     function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+    /* Проверки данных: id, цвет и фото попадают в атрибуты HTML, поэтому принимаем только строгие форматы */
+    var ID_RE = /^[A-Za-z0-9_-]{1,64}$/, COL_RE = /^#[0-9A-Fa-f]{6}$/, PH_RE = /^[0-9a-f]{16}$/;
+    function okId(x) { return typeof x === 'string' && ID_RE.test(x); }
+    function okCol(x) { return typeof x === 'string' && COL_RE.test(x); }
+    function okPh(x) { return typeof x === 'string' && PH_RE.test(x); }
     function pl(n, f) { var m = n % 100, d = n % 10; return n + ' ' + (m > 10 && m < 20 ? f[2] : d === 1 ? f[0] : d > 1 && d < 5 ? f[1] : f[2]); }
     var W = { place: ['место', 'места', 'мест'], box: ['коробка', 'коробки', 'коробок'], item: ['вещь', 'вещи', 'вещей'] };
 

@@ -1,9 +1,9 @@
     /* --- записи для синхронизации: каждая вещь, коробка, категория это отдельная запись с меткой времени --- */
     function norm(r) {
       return {
-        id: r.id, p: r.p == null ? null : r.p, t: r.t, n: r.n == null ? '' : String(r.n), c: r.c || null,
-        q: r.q == null ? null : Number(r.q), tg: Array.isArray(r.tg) ? r.tg.slice() : [], note: r.note || '',
-        ph: Array.isArray(r.ph) ? r.ph.slice() : [], o: r.o || 0, qr: r.qr || '', base: r.base || ''
+        id: r.id, p: okId(r.p) ? r.p : null, t: r.t, n: r.n == null ? '' : String(r.n), c: okCol(r.c) ? r.c : null,
+        q: r.q == null ? null : Number(r.q), tg: Array.isArray(r.tg) ? r.tg.filter(okId) : [], note: r.note || '',
+        ph: Array.isArray(r.ph) ? r.ph.filter(okPh) : [], o: r.o || 0, qr: r.qr || '', base: r.base || ''
       };
     }
     function sig(r) { var x = norm(r); return JSON.stringify([x.p, x.t, x.n, x.c, x.q, x.tg, x.note, x.ph, x.o, x.qr, x.base]); }
@@ -65,6 +65,8 @@
     function applyRemote(list, sent) {
       var changed = false;
       list.forEach(function (r) {
+        if (!r || !okId(r.id)) return;          // чужая запись с недопустимым id не принимается
+        var nr = norm(r); r.p = nr.p; r.c = nr.c; r.tg = nr.tg; r.ph = nr.ph;   // и сервер не считаем безусловно доверенным
         var l = recs[r.id], rv = r.r;
         delete r.r; r.br = rv;
         if (sent && sent[r.id] != null) {

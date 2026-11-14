@@ -21,7 +21,7 @@
         return '<div class="cdiff"><b>' + (FNAME[f] || f) + ':</b> сейчас «' + esc(fmtVal(f, k)) + '», другая версия «' + esc(fmtVal(f, l)) + '»</div>';
       }).join('');
       return '<div class="cbox"><div class="cname">' + esc(nm) + ' <span class="hint">' + fmtT(c.t) + '</span></div><div class="hint">' + esc(who) + '</div>' + rows +
-        '<div class="actions"><button class="btn primary" data-cres="' + c.id + '">Вернуть другую версию</button><button class="btn" data-cdis="' + c.id + '">Оставить как есть</button></div></div>';
+        '<div class="actions"><button class="btn primary" data-cres="' + esc(c.id) + '">Вернуть другую версию</button><button class="btn" data-cdis="' + esc(c.id) + '">Оставить как есть</button></div></div>';
     }
     function logLine(e) {
       var p = [];
@@ -74,6 +74,10 @@
       h += '<div class="sec">Резервная копия</div><div class="hint">Файл со всеми местами, коробками, вещами и категориями. «С фото» файл больше. Фото, которых нет на устройстве, берутся с сервера.</div>' +
         '<div class="actions"><button class="btn" data-export="0"' + (v.busy ? ' disabled' : '') + '>Скачать копию</button><button class="btn" data-export="1"' + (v.busy ? ' disabled' : '') + '>Копия с фото</button></div>';
       if (v.exp) h += '<div class="svcrow"><div class="hint">Готово: ' + esc(v.exp.name) + ', ' + mb(v.exp.size) + (v.exp.missing ? '. Без фото: ' + v.exp.missing + ' (не нашлись)' : '') + '</div><button class="btn primary" data-saveexp>Сохранить файл</button></div>';
+      /* Диагностика экрана: помогает разобраться с полосой внизу на iPhone */
+      var vv = window.visualViewport, pr = document.createElement('div'), cs = '';
+      try { pr.style.cssText = 'position:fixed;left:0;top:0;width:0;padding-bottom:env(safe-area-inset-bottom,0px);visibility:hidden'; document.body.appendChild(pr); cs = pr.offsetHeight; document.body.removeChild(pr); } catch (e) {}
+      h += '<div class="sec">Диагностика экрана</div><div class="hint" style="user-select:text">окно ' + window.innerWidth + '×' + window.innerHeight + ', экран ' + screen.width + '×' + screen.height + ', visualViewport ' + (vv ? Math.round(vv.width) + '×' + Math.round(vv.height) : '—') + ', внешнее ' + window.outerHeight + ', нижний отступ ' + cs + ', режим ' + ((window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches)) ? 'приложение' : 'браузер') + ', панель ' + (function () { var el = document.querySelector('korobki-panel'); return el ? Math.round(el.getBoundingClientRect().height) : '—'; })() + ' px</div>';
       /* Автокопии на сервере: состояние последней, список, кнопка «сделать сейчас» */
       var bk = v.bk, lb = bk && bk.last;
       h += '<div class="sec">Автокопия на сервере</div>';

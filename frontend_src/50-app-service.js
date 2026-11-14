@@ -76,7 +76,9 @@
       ids.forEach(function (id) {                                    // 1. поля каждой записи
         var r = ir[id];
         if (!r || typeof r !== 'object') return why(id, 'не запись');
-        if (r.id !== id || id.length > 64) return why(id, 'id не совпадает или слишком длинный');
+        if (r.id !== id || !okId(id)) return why(id, 'недопустимый id (разрешены буквы, цифры, _ и -, до 64)');
+        if (r.c != null && !okCol(r.c)) return why(id, 'цвет не в формате #RRGGBB');
+        if (r.p != null && !okId(r.p)) return why(id, 'недопустимый id родителя');
         if (!REC_TYPES[r.t]) return why(id, 'неизвестный тип «' + r.t + '»');
         if (r.n != null && typeof r.n !== 'string') return why(id, 'название не строка');
         if (r.tg != null && !Array.isArray(r.tg)) return why(id, 'категории не список');

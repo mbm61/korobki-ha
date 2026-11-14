@@ -9,7 +9,7 @@
         '<div class="ddlist" id="ddlist"' + (S.dd ? '' : ' hidden') + '>';
       h += settings.cats.map(function (c) {
         var on = sel.indexOf(c.id) > -1;
-        return '<button type="button" class="ddrow' + (on ? ' on' : '') + '" role="option" style="--c:' + c.c + '" data-addtag="' + c.id + '" aria-selected="' + on + '"><span class="ddchk">' + svg('check', 16) + '</span><span class="ddname">#' + esc(c.n) + '</span></button>';
+        return '<button type="button" class="ddrow' + (on ? ' on' : '') + '" role="option" style="--c:' + esc(c.c) + '" data-addtag="' + esc(c.id) + '" aria-selected="' + on + '"><span class="ddchk">' + svg('check', 16) + '</span><span class="ddname">#' + esc(c.n) + '</span></button>';
       }).join('');
       return h + '<div class="ddnew"><input id="fNewCat" type="text" autocomplete="off" placeholder="Новая категория" value="' + esc(S.draftCat) + '" aria-label="Новая категория">' +
         ib('data-ddadd', 'plus', 'Создать категорию', 'primary') + '</div></div></div>';

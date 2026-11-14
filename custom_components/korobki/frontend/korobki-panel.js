@@ -495,16 +495,21 @@
     }
     function delBtn(id) {
       var ask = S.conf === id;
-      return '<button type="button" class="ib danger' + (ask ? ' ask' : '') + '" data-del="' + id + '" aria-label="Удалить" title="Удалить">' + svg('trash', 22) + (ask ? '<span>Точно удалить?</span>' : '') + '</button>';
+      return '<button type="button" class="ib danger' + (ask ? ' ask' : '') + '" data-del="' + esc(id) + '" aria-label="Удалить" title="Удалить">' + svg('trash', 22) + (ask ? '<span>Точно удалить?</span>' : '') + '</button>';
     }
     function nodeActions(n) {
-      return '<div class="actions">' + ib('data-qr="' + n.id + '"', 'qr', 'QR-этикетка') + ib('data-move="' + n.id + '"', 'move', 'Переместить') + ib('data-dup="' + n.id + '"', 'copy', 'Копировать') + delBtn(n.id) + '</div>';
+      return '<div class="actions">' + ib('data-qr="' + esc(n.id) + '"', 'qr', 'QR-этикетка') + ib('data-move="' + esc(n.id) + '"', 'move', 'Переместить') + ib('data-dup="' + esc(n.id) + '"', 'copy', 'Копировать') + delBtn(n.id) + '</div>';
     }
     function svg(k, s) {
       s = s || 24;
       return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ic[k] + '</svg>';
     }
     function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+    /* Проверки данных: id, цвет и фото попадают в атрибуты HTML, поэтому принимаем только строгие форматы */
+    var ID_RE = /^[A-Za-z0-9_-]{1,64}$/, COL_RE = /^#[0-9A-Fa-f]{6}$/, PH_RE = /^[0-9a-f]{16}$/;
+    function okId(x) { return typeof x === 'string' && ID_RE.test(x); }
+    function okCol(x) { return typeof x === 'string' && COL_RE.test(x); }
+    function okPh(x) { return typeof x === 'string' && PH_RE.test(x); }
     function pl(n, f) { var m = n % 100, d = n % 10; return n + ' ' + (m > 10 && m < 20 ? f[2] : d === 1 ? f[0] : d > 1 && d < 5 ? f[1] : f[2]); }
     var W = { place: ['место', 'места', 'мест'], box: ['коробка', 'коробки', 'коробок'], item: ['вещь', 'вещи', 'вещей'] };
 
@@ -607,13 +612,13 @@
     }
     function metaHtml(it) {
       var tg = (it.tg || []).map(catById).filter(Boolean), h = '';
-      if (tg.length) h += '<div class="rmeta">' + tg.map(function (c) { return '<span class="mini" style="--c:' + c.c + '">#' + esc(c.n) + '</span>'; }).join('') + '</div>';
+      if (tg.length) h += '<div class="rmeta">' + tg.map(function (c) { return '<span class="mini" style="--c:' + esc(c.c) + '">#' + esc(c.n) + '</span>'; }).join('') + '</div>';
       if (it.note) h += '<div class="rnote">' + esc(it.note) + '</div>';
       return h;
     }
     function hitCard(x) {
       var c = x.c, title = esc(c.n) + (c.t === 'item' ? ' × ' + c.q : '');
-      return '<div class="card" style="--a:' + x.a + '" data-hit="' + x.path.join(',') + '"' + (c.t === 'item' ? ' data-hitid="' + c.id + '"' : '') + ' tabindex="0" role="button">' +
+      return '<div class="card" style="--a:' + esc(x.a) + '" data-hit="' + esc(x.path.join(',')) + '"' + (c.t === 'item' ? ' data-hitid="' + esc(c.id) + '"' : '') + ' tabindex="0" role="button">' +
         tileHtml(c) +
         '<div class="t"><div class="name">' + title + '</div><div class="sub">' + esc([root.n].concat(x.where).join(' › ')) + '</div>' + (c.t === 'item' ? metaHtml(c) : '') + '</div>' +
         '<span class="chev">' + svg('chev', 20) + '</span></div>';
@@ -649,9 +654,9 @@
     /* --- записи для синхронизации: каждая вещь, коробка, категория это отдельная запись с меткой времени --- */
     function norm(r) {
       return {
-        id: r.id, p: r.p == null ? null : r.p, t: r.t, n: r.n == null ? '' : String(r.n), c: r.c || null,
-        q: r.q == null ? null : Number(r.q), tg: Array.isArray(r.tg) ? r.tg.slice() : [], note: r.note || '',
-        ph: Array.isArray(r.ph) ? r.ph.slice() : [], o: r.o || 0, qr: r.qr || '', base: r.base || ''
+        id: r.id, p: okId(r.p) ? r.p : null, t: r.t, n: r.n == null ? '' : String(r.n), c: okCol(r.c) ? r.c : null,
+        q: r.q == null ? null : Number(r.q), tg: Array.isArray(r.tg) ? r.tg.filter(okId) : [], note: r.note || '',
+        ph: Array.isArray(r.ph) ? r.ph.filter(okPh) : [], o: r.o || 0, qr: r.qr || '', base: r.base || ''
       };
     }
     function sig(r) { var x = norm(r); return JSON.stringify([x.p, x.t, x.n, x.c, x.q, x.tg, x.note, x.ph, x.o, x.qr, x.base]); }
@@ -713,6 +718,8 @@
     function applyRemote(list, sent) {
       var changed = false;
       list.forEach(function (r) {
+        if (!r || !okId(r.id)) return;          // чужая запись с недопустимым id не принимается
+        var nr = norm(r); r.p = nr.p; r.c = nr.c; r.tg = nr.tg; r.ph = nr.ph;   // и сервер не считаем безусловно доверенным
         var l = recs[r.id], rv = r.r;
         delete r.r; r.br = rv;
         if (sent && sent[r.id] != null) {
@@ -1023,11 +1030,11 @@
       else if (f.sort === 'old') hits.sort(function (x, y) { return (x.c.o || 0) - (y.c.o || 0); });
       var h = '<div class="head"><h1>' + (finding ? 'Фильтры' : 'Поиск') + '</h1><div class="stat">' + (hits.length ? 'Найдено: ' + hits.length : 'Ничего не найдено') + '</div></div>';
       if (finding) {
-        h += '<div class="form fgroup" style="--a:' + DEF + '">';
+        h += '<div class="form fgroup" style="--a:' + esc(DEF) + '">';
         if (settings.cats.length) {
           h += '<div class="sec">Категории (любая из выбранных)</div><div class="chips">' + settings.cats.map(function (c) {
             var on = f.cats.indexOf(c.id) > -1;
-            return '<button type="button" class="chip' + (on ? ' on' : '') + '" style="--c:' + c.c + '" data-fcat="' + c.id + '" aria-pressed="' + on + '">#' + esc(c.n) + '</button>';
+            return '<button type="button" class="chip' + (on ? ' on' : '') + '" style="--c:' + esc(c.c) + '" data-fcat="' + esc(c.id) + '" aria-pressed="' + on + '">#' + esc(c.n) + '</button>';
           }).join('') + '</div>';
         }
         h += '<div class="chips"><button type="button" class="chip' + (f.nocat ? ' on' : '') + '" style="--c:#8d6e63" data-fnocat aria-pressed="' + f.nocat + '">Без категории</button>' +
@@ -1046,12 +1053,12 @@
       var list = trashList();
       var h = '<div class="head"><h1>Корзина</h1><div class="stat">' + (list.length ? 'Удалённое хранится 30 дней' : 'Пусто') + '</div></div>';
       if (!list.length) return h + '<div class="empty">Удалённые места, коробки и вещи появятся здесь. Их можно вернуть вместе с содержимым.</div>';
-      h += '<div class="bar" style="--a:' + DEF + '"><button class="btn danger' + (S.conf === 'emptytrash' ? ' ask' : '') + '" data-emptytrash>' + (S.conf === 'emptytrash' ? 'Точно очистить? Фото тоже удалятся' : 'Очистить корзину') + '</button></div>';
+      h += '<div class="bar" style="--a:' + esc(DEF) + '"><button class="btn danger' + (S.conf === 'emptytrash' ? ' ask' : '') + '" data-emptytrash>' + (S.conf === 'emptytrash' ? 'Точно очистить? Фото тоже удалятся' : 'Очистить корзину') + '</button></div>';
       return h + '<div class="list">' + list.map(function (r) {
         var kids = trashKids(r), left = Math.max(1, Math.ceil((TRASH_MS - (Date.now() - r.u)) / 86400000));
         return '<div class="card" style="--a:' + (r.c || DEF) + ';cursor:default"><div class="tile">' + svg(r.t) + '</div>' +
           '<div class="t"><div class="name">' + esc(r.n) + '</div><div class="sub">' + KIND[r.t] + (kids ? ' · внутри записей: ' + kids : '') + ' · осталось дн.: ' + left + '</div></div>' +
-          '<button class="btn primary" data-restore="' + r.id + '">Вернуть</button></div>';
+          '<button class="btn primary" data-restore="' + esc(r.id) + '">Вернуть</button></div>';
       }).join('') + '</div>';
     }
 
@@ -1133,7 +1140,9 @@
       ids.forEach(function (id) {                                    // 1. поля каждой записи
         var r = ir[id];
         if (!r || typeof r !== 'object') return why(id, 'не запись');
-        if (r.id !== id || id.length > 64) return why(id, 'id не совпадает или слишком длинный');
+        if (r.id !== id || !okId(id)) return why(id, 'недопустимый id (разрешены буквы, цифры, _ и -, до 64)');
+        if (r.c != null && !okCol(r.c)) return why(id, 'цвет не в формате #RRGGBB');
+        if (r.p != null && !okId(r.p)) return why(id, 'недопустимый id родителя');
         if (!REC_TYPES[r.t]) return why(id, 'неизвестный тип «' + r.t + '»');
         if (r.n != null && typeof r.n !== 'string') return why(id, 'название не строка');
         if (r.tg != null && !Array.isArray(r.tg)) return why(id, 'категории не список');
@@ -1272,7 +1281,7 @@
         return '<div class="cdiff"><b>' + (FNAME[f] || f) + ':</b> сейчас «' + esc(fmtVal(f, k)) + '», другая версия «' + esc(fmtVal(f, l)) + '»</div>';
       }).join('');
       return '<div class="cbox"><div class="cname">' + esc(nm) + ' <span class="hint">' + fmtT(c.t) + '</span></div><div class="hint">' + esc(who) + '</div>' + rows +
-        '<div class="actions"><button class="btn primary" data-cres="' + c.id + '">Вернуть другую версию</button><button class="btn" data-cdis="' + c.id + '">Оставить как есть</button></div></div>';
+        '<div class="actions"><button class="btn primary" data-cres="' + esc(c.id) + '">Вернуть другую версию</button><button class="btn" data-cdis="' + esc(c.id) + '">Оставить как есть</button></div></div>';
     }
     function logLine(e) {
       var p = [];
@@ -1325,6 +1334,10 @@
       h += '<div class="sec">Резервная копия</div><div class="hint">Файл со всеми местами, коробками, вещами и категориями. «С фото» файл больше. Фото, которых нет на устройстве, берутся с сервера.</div>' +
         '<div class="actions"><button class="btn" data-export="0"' + (v.busy ? ' disabled' : '') + '>Скачать копию</button><button class="btn" data-export="1"' + (v.busy ? ' disabled' : '') + '>Копия с фото</button></div>';
       if (v.exp) h += '<div class="svcrow"><div class="hint">Готово: ' + esc(v.exp.name) + ', ' + mb(v.exp.size) + (v.exp.missing ? '. Без фото: ' + v.exp.missing + ' (не нашлись)' : '') + '</div><button class="btn primary" data-saveexp>Сохранить файл</button></div>';
+      /* Диагностика экрана: помогает разобраться с полосой внизу на iPhone */
+      var vv = window.visualViewport, pr = document.createElement('div'), cs = '';
+      try { pr.style.cssText = 'position:fixed;left:0;top:0;width:0;padding-bottom:env(safe-area-inset-bottom,0px);visibility:hidden'; document.body.appendChild(pr); cs = pr.offsetHeight; document.body.removeChild(pr); } catch (e) {}
+      h += '<div class="sec">Диагностика экрана</div><div class="hint" style="user-select:text">окно ' + window.innerWidth + '×' + window.innerHeight + ', экран ' + screen.width + '×' + screen.height + ', visualViewport ' + (vv ? Math.round(vv.width) + '×' + Math.round(vv.height) : '—') + ', внешнее ' + window.outerHeight + ', нижний отступ ' + cs + ', режим ' + ((window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches)) ? 'приложение' : 'браузер') + ', панель ' + (function () { var el = document.querySelector('korobki-panel'); return el ? Math.round(el.getBoundingClientRect().height) : '—'; })() + ' px</div>';
       /* Автокопии на сервере: состояние последней, список, кнопка «сделать сейчас» */
       var bk = v.bk, lb = bk && bk.last;
       h += '<div class="sec">Автокопия на сервере</div>';
@@ -1413,30 +1426,30 @@
     /* --- отрисовка --- */
     function tileHtml(n) {
       var p = firstPhoto(n);
-      if (p) return '<div class="tile ph" style="background-image:url(' + p + ')"></div>';
+      if (p) return '<div class="tile ph" style="background-image:url(' + esc(p) + ')"></div>';
       return n.t === 'item' ? '<div class="tile ini">' + esc(initial(n.n)) + '</div>' : '<div class="tile">' + svg(n.t) + '</div>';
     }
     function initial(name) { var m = /[A-Za-zА-Яа-яЁё0-9]/.exec(name || ''); return m ? m[0].toUpperCase() : '•'; }
     function gridHtml(n, acc) {
       var a = n.c || acc, p = firstPhoto(n), st = stats(n);
-      return '<div class="g" style="--a:' + a + '" data-open="' + n.id + '" tabindex="0" role="button" aria-label="Открыть: ' + esc(n.n) + '">' +
-        '<div class="cover" style="' + (p ? 'background-image:url(' + p + ')' : '') + '">' + (p ? '' : svg(n.t)) +
+      return '<div class="g" style="--a:' + esc(a) + '" data-open="' + esc(n.id) + '" tabindex="0" role="button" aria-label="Открыть: ' + esc(n.n) + '">' +
+        '<div class="cover" style="' + (p ? 'background-image:url(' + esc(p) + ')' : '') + '">' + (p ? '' : svg(n.t)) +
         (S.edit ? delHtml(n.id) : '<span class="badge" title="Вещей внутри">' + st.i + '</span>') + '</div>' +
         '<div class="gb"><div class="name">' + esc(n.n) + '</div></div></div>';
     }
     function compactHtml(n, acc) {
       var a = n.c || acc;
-      return '<div class="card cs" style="--a:' + a + '" data-open="' + n.id + '" tabindex="0" role="button" aria-label="Открыть: ' + esc(n.n) + '">' +
+      return '<div class="card cs" style="--a:' + esc(a) + '" data-open="' + esc(n.id) + '" tabindex="0" role="button" aria-label="Открыть: ' + esc(n.n) + '">' +
         tileHtml(n) + '<div class="t"><div class="name">' + esc(n.n) + '</div></div>' +
         (S.edit ? delHtml(n.id) : '<span class="chev">' + svg('chev', 18) + '</span>') + '</div>';
     }
     function delHtml(id) {
       var ask = S.conf === id;
-      return '<button class="del' + (ask ? ' ask' : '') + '" data-del="' + id + '" aria-label="Удалить">' + (ask ? 'Удалить?' : svg('x', 16)) + '</button>';
+      return '<button class="del' + (ask ? ' ask' : '') + '" data-del="' + esc(id) + '" aria-label="Удалить">' + (ask ? 'Удалить?' : svg('x', 16)) + '</button>';
     }
     function cardHtml(n, acc) {
       var a = n.c || acc;
-      return '<div class="card" style="--a:' + a + '" data-open="' + n.id + '" tabindex="0" role="button" aria-label="Открыть: ' + esc(n.n) + '">' +
+      return '<div class="card" style="--a:' + esc(a) + '" data-open="' + esc(n.id) + '" tabindex="0" role="button" aria-label="Открыть: ' + esc(n.n) + '">' +
         tileHtml(n) +
         '<div class="t"><div class="name">' + esc(n.n) + '</div></div>' +
         (S.edit ? delHtml(n.id) : '<span class="chev">' + svg('chev', 20) + '</span>') + '</div>';
@@ -1445,10 +1458,10 @@
       var h = '';
       (n.ph || []).forEach(function (id, i) {
         var u = photoUrl(id);
-        h += u ? '<button class="th" data-view="' + n.id + ':' + i + '" style="background-image:url(' + u + ')" aria-label="Фото ' + (i + 1) + '"></button>'
+        h += u ? '<button class="th" data-view="' + esc(n.id) + ':' + i + '" style="background-image:url(' + esc(u) + ')" aria-label="Фото ' + (i + 1) + '"></button>'
                : '<div class="th wait"></div>';
       });
-      if (addToo && (n.ph || []).length < MAXPH) h += '<button class="th add" data-addphoto="' + n.id + '">' + svg('cam', 22) + '<span>Фото</span></button>';
+      if (addToo && (n.ph || []).length < MAXPH) h += '<button class="th add" data-addphoto="' + esc(n.id) + '">' + svg('cam', 22) + '<span>Фото</span></button>';
       return h;
     }
 
@@ -1460,19 +1473,19 @@
       var type = S.addType && allowed.indexOf(S.addType) > -1 ? S.addType : allowed[0];
       var addLabel = cur.t === 'home' ? 'Добавить место' : cur.t === 'place' ? 'Добавить в место' : 'Добавить в коробку';
 
-      var h = '<div class="head"><div class="h1row"><h1><button type="button" class="h1btn" data-edit="' + cur.id + '" aria-label="Изменить название: ' + esc(cur.n) + '">' + esc(cur.n) + '</button></h1></div></div>';
+      var h = '<div class="head"><div class="h1row"><h1><button type="button" class="h1btn" data-edit="' + esc(cur.id) + '" aria-label="Изменить название: ' + esc(cur.n) + '">' + esc(cur.n) + '</button></h1></div></div>';
       /* Панель кнопок: слоты всегда на одних местах, недоступные гаснут */
-      h += '<div class="bar" style="--a:' + acc + '">' +
+      h += '<div class="bar" style="--a:' + esc(acc) + '">' +
         ib('data-toggle-add', 'plus', addLabel, 'primary' + (S.adding ? ' on' : '')) +
-        ib(cur.t !== 'home' ? 'data-qr="' + cur.id + '"' : 'disabled', 'qr', 'QR-этикетка') +
+        ib(cur.t !== 'home' ? 'data-qr="' + esc(cur.id) + '"' : 'disabled', 'qr', 'QR-этикетка') +
         ib(cur.ch.length ? 'data-toggle-edit' : 'disabled', S.edit ? 'check' : 'pen', S.edit ? 'Готово' : 'Править', S.edit ? 'on' : '') +
         '</div>';
 
       if (S.adding) {
-        h += '<form class="form" id="addForm" style="--a:' + acc + '">';
+        h += '<form class="form" id="addForm" style="--a:' + esc(acc) + '">';
         if (allowed.length > 1) {
           h += '<div class="seg" role="group" aria-label="Что добавить">' + allowed.map(function (t) {
-            return '<button type="button" data-type="' + t + '" class="' + (t === type ? 'on' : '') + '">' + TLABEL[t] + '</button>';
+            return '<button type="button" data-type="' + esc(t) + '" class="' + (t === type ? 'on' : '') + '">' + TLABEL[t] + '</button>';
           }).join('') + '</div>';
         }
         if (type === 'item' && S.bulk) {
@@ -1487,7 +1500,7 @@
         if (type === 'item' && !S.bulk) h += '<label class="sec" for="fNote">Пометка</label><textarea class="field ta" id="fNote" rows="2" placeholder="Срок годности, размер, где купили">' + esc(S.draftNote) + '</textarea>';
         if (!(type === 'item' && S.bulk)) {
           h += '<div class="sec">Фото</div><div class="grid">' + S.addFiles.map(function (f, i) {
-            return '<button type="button" class="th" data-newphdel="' + i + '" style="background-image:url(' + f.url + ')" aria-label="Убрать фото ' + (i + 1) + '"><span class="thx">' + svg('x', 14) + '</span></button>';
+            return '<button type="button" class="th" data-newphdel="' + esc(i) + '" style="background-image:url(' + esc(f.url) + ')" aria-label="Убрать фото ' + (i + 1) + '"><span class="thx">' + svg('x', 14) + '</span></button>';
           }).join('') + (S.addFiles.length < MAXPH ? '<button type="button" class="th add" data-addphoto="__new">' + svg('cam', 22) + '<span>Фото</span></button>' : '') + '</div>';
         }
         h += '<div class="actions right"><button class="btn" type="button" data-toggle-add>Отмена</button><button class="btn primary" type="submit">Добавить</button></div></form>';
@@ -1499,20 +1512,20 @@
       }
 
       if (items.length) {
-        h += '<div class="label">Вещи</div><div class="items" style="--a:' + acc + '">' + items.map(function (it) {
+        h += '<div class="label">Вещи</div><div class="items" style="--a:' + esc(acc) + '">' + items.map(function (it) {
           var p = firstPhoto(it);
-          return '<div class="row"><div class="rmain" data-sheet="' + it.id + '" tabindex="0" role="button" aria-label="Открыть: ' + esc(it.n) + '">' +
-            (p ? '<div class="rthumb" style="background-image:url(' + p + ')"></div>' : '<div class="rthumb ini">' + esc(initial(it.n)) + '</div>') +
+          return '<div class="row"><div class="rmain" data-sheet="' + esc(it.id) + '" tabindex="0" role="button" aria-label="Открыть: ' + esc(it.n) + '">' +
+            (p ? '<div class="rthumb" style="background-image:url(' + esc(p) + ')"></div>' : '<div class="rthumb ini">' + esc(initial(it.n)) + '</div>') +
             '<div class="rtext"><div class="rname">' + esc(it.n) + '</div>' + metaHtml(it) + '</div></div>' +
-            '<div class="step"><button data-step="' + it.id + '" data-d="-1" aria-label="Меньше">−</button><span class="qty">' + it.q + '</span><button data-step="' + it.id + '" data-d="1" aria-label="Больше">+</button></div>' +
+            '<div class="step"><button data-step="' + esc(it.id) + '" data-d="-1" aria-label="Меньше">−</button><span class="qty">' + it.q + '</span><button data-step="' + esc(it.id) + '" data-d="1" aria-label="Больше">+</button></div>' +
             (S.edit ? delHtml(it.id) : '') + '</div>';
         }).join('') + '</div>';
       }
 
       if (!cur.ch.length && !S.adding) {
         if (cur.t === 'home') {
-          h += '<div class="empty" style="--a:' + acc + '"><div class="eico">' + svg('place') + '</div><div>Пока нет ни одного места. Начните с кладовки, балкона или антресоли.</div><button class="btn primary" data-toggle-add>' + svg('plus', 18) + 'Добавить место</button><button class="btn" data-seed>Заполнить примером</button></div>';
-        } else h += '<div class="empty" style="--a:' + acc + '"><div class="eico">' + svg(cur.t === 'place' ? 'box' : 'item') + '</div><div>Здесь пока пусто.</div><button class="btn primary" data-toggle-add>' + svg('plus', 18) + addLabel + '</button></div>';
+          h += '<div class="empty" style="--a:' + esc(acc) + '"><div class="eico">' + svg('place') + '</div><div>Пока нет ни одного места. Начните с кладовки, балкона или антресоли.</div><button class="btn primary" data-toggle-add>' + svg('plus', 18) + 'Добавить место</button><button class="btn" data-seed>Заполнить примером</button></div>';
+        } else h += '<div class="empty" style="--a:' + esc(acc) + '"><div class="eico">' + svg(cur.t === 'place' ? 'box' : 'item') + '</div><div>Здесь пока пусто.</div><button class="btn primary" data-toggle-add>' + svg('plus', 18) + addLabel + '</button></div>';
       }
       return h;
     }
@@ -1535,7 +1548,7 @@
     function catsView() {
       var n = settings.cats.length;
       var h = '<div class="head"><h1>Категории</h1><div class="stat">' + (n ? pl(n, ['категория', 'категории', 'категорий']) : 'Пока нет ни одной категории') + '</div></div>';
-      h += '<form class="form" id="catForm" style="--a:' + DEF + '"><input id="newCatName" type="text" autocomplete="off" placeholder="Новая категория, например: хрупкое" aria-label="Название категории">' +
+      h += '<form class="form" id="catForm" style="--a:' + esc(DEF) + '"><input id="newCatName" type="text" autocomplete="off" placeholder="Новая категория, например: хрупкое" aria-label="Название категории">' +
         '<div class="actions"><button class="btn primary" type="submit">Добавить</button>' +
         (n ? ib('data-toggle-edit', S.edit ? 'check' : 'pen', S.edit ? 'Готово' : 'Править', S.edit ? 'on' : '') : '') + '</div></form>';
       if (!n) return h + '<div class="empty">Категории помогают отмечать вещи: хрупкое, зимнее, документы, на выброс. Создайте категорию здесь, потом выбирайте её в карточке вещи.</div>';
@@ -1543,11 +1556,11 @@
         var cnt = catCount(c.id);
         if (S.edit) {
           var ask = S.conf === 'cat:' + c.id;
-          return '<div class="card" style="--a:' + c.c + ';cursor:default"><div class="tile">' + svg('tag') + '</div>' +
-            '<div class="t"><input class="field" data-catname="' + c.id + '" value="' + esc(c.n) + '" aria-label="Название категории"></div>' +
-            '<button class="del' + (ask ? ' ask' : '') + '" data-delcat="' + c.id + '" aria-label="Удалить категорию">' + (ask ? 'Удалить?' : svg('x', 16)) + '</button></div>';
+          return '<div class="card" style="--a:' + esc(c.c) + ';cursor:default"><div class="tile">' + svg('tag') + '</div>' +
+            '<div class="t"><input class="field" data-catname="' + esc(c.id) + '" value="' + esc(c.n) + '" aria-label="Название категории"></div>' +
+            '<button class="del' + (ask ? ' ask' : '') + '" data-delcat="' + esc(c.id) + '" aria-label="Удалить категорию">' + (ask ? 'Удалить?' : svg('x', 16)) + '</button></div>';
         }
-        return '<div class="card" style="--a:' + c.c + '" data-cat="' + c.id + '" tabindex="0" role="button">' +
+        return '<div class="card" style="--a:' + esc(c.c) + '" data-cat="' + esc(c.id) + '" tabindex="0" role="button">' +
           '<div class="tile">' + svg('tag') + '</div>' +
           '<div class="t"><div class="name">#' + esc(c.n) + '</div></div>' +
           '<span class="chev">' + svg('chev', 20) + '</span></div>';
@@ -1575,7 +1588,7 @@
         '<div class="ddlist" id="ddlist"' + (S.dd ? '' : ' hidden') + '>';
       h += settings.cats.map(function (c) {
         var on = sel.indexOf(c.id) > -1;
-        return '<button type="button" class="ddrow' + (on ? ' on' : '') + '" role="option" style="--c:' + c.c + '" data-addtag="' + c.id + '" aria-selected="' + on + '"><span class="ddchk">' + svg('check', 16) + '</span><span class="ddname">#' + esc(c.n) + '</span></button>';
+        return '<button type="button" class="ddrow' + (on ? ' on' : '') + '" role="option" style="--c:' + esc(c.c) + '" data-addtag="' + esc(c.id) + '" aria-selected="' + on + '"><span class="ddchk">' + svg('check', 16) + '</span><span class="ddname">#' + esc(c.n) + '</span></button>';
       }).join('');
       return h + '<div class="ddnew"><input id="fNewCat" type="text" autocomplete="off" placeholder="Новая категория" value="' + esc(S.draftCat) + '" aria-label="Новая категория">' +
         ib('data-ddadd', 'plus', 'Создать категорию', 'primary') + '</div></div></div>';
@@ -1587,12 +1600,12 @@
       var rest = settings.cats.filter(function (c) { return on.indexOf(c.id) < 0; });
       var h = '<div class="sec">Категории</div>';
       if (mine.length) h += '<div class="chips">' + mine.map(function (c) {
-        return '<button type="button" class="chip on" style="--c:' + c.c + '" data-tag="' + c.id + '" aria-label="Убрать категорию ' + esc(c.n) + '">#' + esc(c.n) + ' ' + svg('x', 14) + '</button>';
+        return '<button type="button" class="chip on" style="--c:' + esc(c.c) + '" data-tag="' + esc(c.id) + '" aria-label="Убрать категорию ' + esc(c.n) + '">#' + esc(c.n) + ' ' + svg('x', 14) + '</button>';
       }).join('') + '</div>';
       h += '<div class="dd"><button type="button" class="ddbtn" data-sdd aria-expanded="' + open + '"><span class="ddsum">' + (mine.length ? 'Добавить категорию' : 'Выбрать категорию') + '</span>' + svg('chevd', 20) + '</button>' +
         '<div class="ddlist" id="sddlist"' + (open ? '' : ' hidden') + '>' +
         rest.map(function (c) {
-          return '<button type="button" class="ddrow" role="option" style="--c:' + c.c + '" data-tag="' + c.id + '"><span class="ddchk">' + svg('check', 16) + '</span><span class="ddname">#' + esc(c.n) + '</span></button>';
+          return '<button type="button" class="ddrow" role="option" style="--c:' + esc(c.c) + '" data-tag="' + esc(c.id) + '"><span class="ddchk">' + svg('check', 16) + '</span><span class="ddname">#' + esc(c.n) + '</span></button>';
         }).join('') +
         '<form class="ddnew" id="sCatForm"><input class="field" id="sCatName" type="text" autocomplete="off" placeholder="Новая категория" aria-label="Новая категория">' + ib('', 'plus', 'Создать категорию', 'primary').replace('type="button"', 'type="submit"') + '</form></div></div>';
       return h;
@@ -1612,27 +1625,27 @@
       if (!sh) return '';
       var n = findNode(root, sh.id);
       if (!n) { S.sheet = null; return ''; }
-      var a = accOf(n.id), h = '<div class="scrim" data-close></div><div class="panel" role="dialog" aria-modal="true" style="--a:' + a + '"><div class="grab" aria-hidden="true"></div>';
+      var a = accOf(n.id), h = '<div class="scrim" data-close></div><div class="panel" role="dialog" aria-modal="true" style="--a:' + esc(a) + '"><div class="grab" aria-hidden="true"></div>';
       var head = function (kind) {
         return '<div class="phead">' + (sh.back ? '<button class="x" data-close aria-label="Назад">' + svg('back', 18) + '</button>' : '') +
           '<div class="kind" style="flex:1">' + kind + '</div><button class="x" data-close aria-label="Закрыть">' + svg('x', 18) + '</button></div>';
       };
       if (sh.type === 'item') {
         h += head('Вещь') +
-          '<input class="field big" id="sName" data-rename="' + n.id + '" value="' + esc(n.n) + '" aria-label="Название">' +
+          '<input class="field big" id="sName" data-rename="' + esc(n.id) + '" value="' + esc(n.n) + '" aria-label="Название">' +
           '<div class="hint">' + esc(namesTo(n.id).join(' › ')) + '</div>' +
-          '<div class="line"><span>Количество</span><div class="step"><button data-step="' + n.id + '" data-d="-1" aria-label="Меньше">−</button><span class="qty">' + n.q + '</span><button data-step="' + n.id + '" data-d="1" aria-label="Больше">+</button></div></div>' +
+          '<div class="line"><span>Количество</span><div class="step"><button data-step="' + esc(n.id) + '" data-d="-1" aria-label="Меньше">−</button><span class="qty">' + n.q + '</span><button data-step="' + esc(n.id) + '" data-d="1" aria-label="Больше">+</button></div></div>' +
           catsBlock(n) +
-          '<label class="sec" for="sNote">Пометка</label><textarea class="field ta" id="sNote" data-note="' + n.id + '" rows="2" placeholder="Срок годности, размер, где купили">' + esc(n.note || '') + '</textarea>' +
+          '<label class="sec" for="sNote">Пометка</label><textarea class="field ta" id="sNote" data-note="' + esc(n.id) + '" rows="2" placeholder="Срок годности, размер, где купили">' + esc(n.note || '') + '</textarea>' +
           '<div class="sec">Фото</div><div class="grid">' + thumbsHtml(n, true) + '</div>' +
           nodeActions(n);
       } else if (sh.type === 'node') {
         h += head(KIND[n.t]) +
-          '<input class="field big" id="sName" data-rename="' + n.id + '" value="' + esc(n.n) + '" aria-label="Название">' +
+          '<input class="field big" id="sName" data-rename="' + esc(n.id) + '" value="' + esc(n.n) + '" aria-label="Название">' +
           '<div class="hint">' + (n.t === 'home' ? 'Название дома или квартиры. Показывается вверху и в пути.' : esc(namesTo(n.id).join(' › '))) + '</div>' +
           (n.t === 'home' ? '' : '<div class="sec">Цвет</div><div class="swatches">' +
-            (n.t === 'box' ? '<button type="button" class="sw auto' + (!n.c ? ' on' : '') + '" data-setcolor="" data-for="' + n.id + '">Как у места</button>' : '') +
-            PAL.map(function (c) { return '<button type="button" class="sw' + (n.c === c ? ' on' : '') + '" style="--c:' + c + '" data-setcolor="' + c + '" data-for="' + n.id + '" aria-label="Цвет ' + c + '"></button>'; }).join('') + '</div>') +
+            (n.t === 'box' ? '<button type="button" class="sw auto' + (!n.c ? ' on' : '') + '" data-setcolor="" data-for="' + esc(n.id) + '">Как у места</button>' : '') +
+            PAL.map(function (c) { return '<button type="button" class="sw' + (n.c === c ? ' on' : '') + '" style="--c:' + esc(c) + '" data-setcolor="' + esc(c) + '" data-for="' + esc(n.id) + '" aria-label="Цвет ' + c + '"></button>'; }).join('') + '</div>') +
           (n.t === 'home' ? '' : '<div class="sec">Фото</div><div class="grid">' + thumbsHtml(n, true) + '</div>') +
           (n.t === 'home' ? '' : nodeActions(n));
       } else if (sh.type === 'svc') {
@@ -1641,7 +1654,7 @@
         var tg = moveTargets(n);
         h += head('Переместить') + '<div class="hint">Что: ' + esc(n.n) + '. Куда переложить:</div>' +
           (tg.length ? tg.map(function (t) {
-            return '<button class="mrow" data-moveto="' + t.node.id + '"' + (t.cur ? ' disabled' : '') + '>' + esc(t.path.join(' › ')) + (t.cur ? '<span class="sub">сейчас здесь</span>' : '') + '</button>';
+            return '<button class="mrow" data-moveto="' + esc(t.node.id) + '"' + (t.cur ? ' disabled' : '') + '>' + esc(t.path.join(' › ')) + (t.cur ? '<span class="sub">сейчас здесь</span>' : '') + '</button>';
           }).join('') : '<div class="empty">Некуда перекладывать.</div>');
       } else if (sh.type === 'qr') {
         h += head('QR-этикетка') +
@@ -1655,7 +1668,7 @@
           '<div class="vnav"><button class="btn" data-nav="-1"' + (i === 0 ? ' disabled' : '') + ' aria-label="Предыдущее">←</button>' +
           '<span class="hint">' + (i + 1) + ' из ' + ids.length + '</span>' +
           '<button class="btn" data-nav="1"' + (i >= ids.length - 1 ? ' disabled' : '') + ' aria-label="Следующее">→</button></div>' +
-          '<button class="btn danger' + (S.conf === 'ph:' + pid ? ' ask' : '') + '" data-delphoto="' + pid + '">' + (S.conf === 'ph:' + pid ? 'Точно удалить фото?' : 'Удалить фото') + '</button></div>';
+          '<button class="btn danger' + (S.conf === 'ph:' + pid ? ' ask' : '') + '" data-delphoto="' + esc(pid) + '">' + (S.conf === 'ph:' + pid ? 'Точно удалить фото?' : 'Удалить фото') + '</button></div>';
       }
       return h + '</div>';
     }
@@ -1730,7 +1743,7 @@
       } else {
         $('crumbs').innerHTML = T.nodes.map(function (n, i) {
           var last = i === T.nodes.length - 1;
-          return last ? '<span class="cur">' + esc(n.n) + '</span>' : '<button class="crumb" data-crumb="' + i + '">' + esc(n.n) + '</button><span class="chev">' + svg('chev', 14) + '</span>';
+          return last ? '<span class="cur">' + esc(n.n) + '</span>' : '<button class="crumb" data-crumb="' + esc(i) + '">' + esc(n.n) + '</button><span class="chev">' + svg('chev', 14) + '</span>';
         }).join('');
       }
       var crEl = $('crumbs'); crEl.scrollLeft = crEl.scrollWidth;
@@ -2118,7 +2131,9 @@
       booted = true; clearTimeout(bootT);
       dbGet('kv', 'state', function (st) {
         if (st && st.recs) {
-          recs = st.recs; dirty = {};
+          recs = {};
+          Object.keys(st.recs).forEach(function (k) { var r = st.recs[k]; if (okId(k) && r && r.id === k) { var x = Object.assign({}, r, norm(r)); recs[k] = x; } });   // очистка старых данных на устройстве
+          dirty = {};
           (st.dirty || []).forEach(function (i) { dirty[i] = 1; });
           upq = st.upq || []; delq = st.delq || []; since = st.since || 0; device = st.device || ''; useq = st.useq || 0; nconf = st.nconf || 0; everSynced = !!st.synced; dsince = st.dsince || 0;
         }

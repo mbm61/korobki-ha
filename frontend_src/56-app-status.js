@@ -59,7 +59,7 @@
       } else {
         $('crumbs').innerHTML = T.nodes.map(function (n, i) {
           var last = i === T.nodes.length - 1;
-          return last ? '<span class="cur">' + esc(n.n) + '</span>' : '<button class="crumb" data-crumb="' + i + '">' + esc(n.n) + '</button><span class="chev">' + svg('chev', 14) + '</span>';
+          return last ? '<span class="cur">' + esc(n.n) + '</span>' : '<button class="crumb" data-crumb="' + esc(i) + '">' + esc(n.n) + '</button><span class="chev">' + svg('chev', 14) + '</span>';
         }).join('');
       }
       var crEl = $('crumbs'); crEl.scrollLeft = crEl.scrollWidth;

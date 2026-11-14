@@ -5,12 +5,12 @@
       var rest = settings.cats.filter(function (c) { return on.indexOf(c.id) < 0; });
       var h = '<div class="sec">Категории</div>';
       if (mine.length) h += '<div class="chips">' + mine.map(function (c) {
-        return '<button type="button" class="chip on" style="--c:' + c.c + '" data-tag="' + c.id + '" aria-label="Убрать категорию ' + esc(c.n) + '">#' + esc(c.n) + ' ' + svg('x', 14) + '</button>';
+        return '<button type="button" class="chip on" style="--c:' + esc(c.c) + '" data-tag="' + esc(c.id) + '" aria-label="Убрать категорию ' + esc(c.n) + '">#' + esc(c.n) + ' ' + svg('x', 14) + '</button>';
       }).join('') + '</div>';
       h += '<div class="dd"><button type="button" class="ddbtn" data-sdd aria-expanded="' + open + '"><span class="ddsum">' + (mine.length ? 'Добавить категорию' : 'Выбрать категорию') + '</span>' + svg('chevd', 20) + '</button>' +
         '<div class="ddlist" id="sddlist"' + (open ? '' : ' hidden') + '>' +
         rest.map(function (c) {
-          return '<button type="button" class="ddrow" role="option" style="--c:' + c.c + '" data-tag="' + c.id + '"><span class="ddchk">' + svg('check', 16) + '</span><span class="ddname">#' + esc(c.n) + '</span></button>';
+          return '<button type="button" class="ddrow" role="option" style="--c:' + esc(c.c) + '" data-tag="' + esc(c.id) + '"><span class="ddchk">' + svg('check', 16) + '</span><span class="ddname">#' + esc(c.n) + '</span></button>';
         }).join('') +
         '<form class="ddnew" id="sCatForm"><input class="field" id="sCatName" type="text" autocomplete="off" placeholder="Новая категория" aria-label="Новая категория">' + ib('', 'plus', 'Создать категорию', 'primary').replace('type="button"', 'type="submit"') + '</form></div></div>';
       return h;
@@ -30,27 +30,27 @@
       if (!sh) return '';
       var n = findNode(root, sh.id);
       if (!n) { S.sheet = null; return ''; }
-      var a = accOf(n.id), h = '<div class="scrim" data-close></div><div class="panel" role="dialog" aria-modal="true" style="--a:' + a + '"><div class="grab" aria-hidden="true"></div>';
+      var a = accOf(n.id), h = '<div class="scrim" data-close></div><div class="panel" role="dialog" aria-modal="true" style="--a:' + esc(a) + '"><div class="grab" aria-hidden="true"></div>';
       var head = function (kind) {
         return '<div class="phead">' + (sh.back ? '<button class="x" data-close aria-label="Назад">' + svg('back', 18) + '</button>' : '') +
           '<div class="kind" style="flex:1">' + kind + '</div><button class="x" data-close aria-label="Закрыть">' + svg('x', 18) + '</button></div>';
       };
       if (sh.type === 'item') {
         h += head('Вещь') +
-          '<input class="field big" id="sName" data-rename="' + n.id + '" value="' + esc(n.n) + '" aria-label="Название">' +
+          '<input class="field big" id="sName" data-rename="' + esc(n.id) + '" value="' + esc(n.n) + '" aria-label="Название">' +
           '<div class="hint">' + esc(namesTo(n.id).join(' › ')) + '</div>' +
-          '<div class="line"><span>Количество</span><div class="step"><button data-step="' + n.id + '" data-d="-1" aria-label="Меньше">−</button><span class="qty">' + n.q + '</span><button data-step="' + n.id + '" data-d="1" aria-label="Больше">+</button></div></div>' +
+          '<div class="line"><span>Количество</span><div class="step"><button data-step="' + esc(n.id) + '" data-d="-1" aria-label="Меньше">−</button><span class="qty">' + n.q + '</span><button data-step="' + esc(n.id) + '" data-d="1" aria-label="Больше">+</button></div></div>' +
           catsBlock(n) +
-          '<label class="sec" for="sNote">Пометка</label><textarea class="field ta" id="sNote" data-note="' + n.id + '" rows="2" placeholder="Срок годности, размер, где купили">' + esc(n.note || '') + '</textarea>' +
+          '<label class="sec" for="sNote">Пометка</label><textarea class="field ta" id="sNote" data-note="' + esc(n.id) + '" rows="2" placeholder="Срок годности, размер, где купили">' + esc(n.note || '') + '</textarea>' +
           '<div class="sec">Фото</div><div class="grid">' + thumbsHtml(n, true) + '</div>' +
           nodeActions(n);
       } else if (sh.type === 'node') {
         h += head(KIND[n.t]) +
-          '<input class="field big" id="sName" data-rename="' + n.id + '" value="' + esc(n.n) + '" aria-label="Название">' +
+          '<input class="field big" id="sName" data-rename="' + esc(n.id) + '" value="' + esc(n.n) + '" aria-label="Название">' +
           '<div class="hint">' + (n.t === 'home' ? 'Название дома или квартиры. Показывается вверху и в пути.' : esc(namesTo(n.id).join(' › '))) + '</div>' +
           (n.t === 'home' ? '' : '<div class="sec">Цвет</div><div class="swatches">' +
-            (n.t === 'box' ? '<button type="button" class="sw auto' + (!n.c ? ' on' : '') + '" data-setcolor="" data-for="' + n.id + '">Как у места</button>' : '') +
-            PAL.map(function (c) { return '<button type="button" class="sw' + (n.c === c ? ' on' : '') + '" style="--c:' + c + '" data-setcolor="' + c + '" data-for="' + n.id + '" aria-label="Цвет ' + c + '"></button>'; }).join('') + '</div>') +
+            (n.t === 'box' ? '<button type="button" class="sw auto' + (!n.c ? ' on' : '') + '" data-setcolor="" data-for="' + esc(n.id) + '">Как у места</button>' : '') +
+            PAL.map(function (c) { return '<button type="button" class="sw' + (n.c === c ? ' on' : '') + '" style="--c:' + esc(c) + '" data-setcolor="' + esc(c) + '" data-for="' + esc(n.id) + '" aria-label="Цвет ' + c + '"></button>'; }).join('') + '</div>') +
           (n.t === 'home' ? '' : '<div class="sec">Фото</div><div class="grid">' + thumbsHtml(n, true) + '</div>') +
           (n.t === 'home' ? '' : nodeActions(n));
       } else if (sh.type === 'svc') {
@@ -59,7 +59,7 @@
         var tg = moveTargets(n);
         h += head('Переместить') + '<div class="hint">Что: ' + esc(n.n) + '. Куда переложить:</div>' +
           (tg.length ? tg.map(function (t) {
-            return '<button class="mrow" data-moveto="' + t.node.id + '"' + (t.cur ? ' disabled' : '') + '>' + esc(t.path.join(' › ')) + (t.cur ? '<span class="sub">сейчас здесь</span>' : '') + '</button>';
+            return '<button class="mrow" data-moveto="' + esc(t.node.id) + '"' + (t.cur ? ' disabled' : '') + '>' + esc(t.path.join(' › ')) + (t.cur ? '<span class="sub">сейчас здесь</span>' : '') + '</button>';
           }).join('') : '<div class="empty">Некуда перекладывать.</div>');
       } else if (sh.type === 'qr') {
         h += head('QR-этикетка') +
@@ -73,7 +73,7 @@
           '<div class="vnav"><button class="btn" data-nav="-1"' + (i === 0 ? ' disabled' : '') + ' aria-label="Предыдущее">←</button>' +
           '<span class="hint">' + (i + 1) + ' из ' + ids.length + '</span>' +
           '<button class="btn" data-nav="1"' + (i >= ids.length - 1 ? ' disabled' : '') + ' aria-label="Следующее">→</button></div>' +
-          '<button class="btn danger' + (S.conf === 'ph:' + pid ? ' ask' : '') + '" data-delphoto="' + pid + '">' + (S.conf === 'ph:' + pid ? 'Точно удалить фото?' : 'Удалить фото') + '</button></div>';
+          '<button class="btn danger' + (S.conf === 'ph:' + pid ? ' ask' : '') + '" data-delphoto="' + esc(pid) + '">' + (S.conf === 'ph:' + pid ? 'Точно удалить фото?' : 'Удалить фото') + '</button></div>';
       }
       return h + '</div>';
     }

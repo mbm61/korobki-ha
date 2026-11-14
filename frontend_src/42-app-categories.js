@@ -38,13 +38,13 @@
     }
     function metaHtml(it) {
       var tg = (it.tg || []).map(catById).filter(Boolean), h = '';
-      if (tg.length) h += '<div class="rmeta">' + tg.map(function (c) { return '<span class="mini" style="--c:' + c.c + '">#' + esc(c.n) + '</span>'; }).join('') + '</div>';
+      if (tg.length) h += '<div class="rmeta">' + tg.map(function (c) { return '<span class="mini" style="--c:' + esc(c.c) + '">#' + esc(c.n) + '</span>'; }).join('') + '</div>';
       if (it.note) h += '<div class="rnote">' + esc(it.note) + '</div>';
       return h;
     }
     function hitCard(x) {
       var c = x.c, title = esc(c.n) + (c.t === 'item' ? ' × ' + c.q : '');
-      return '<div class="card" style="--a:' + x.a + '" data-hit="' + x.path.join(',') + '"' + (c.t === 'item' ? ' data-hitid="' + c.id + '"' : '') + ' tabindex="0" role="button">' +
+      return '<div class="card" style="--a:' + esc(x.a) + '" data-hit="' + esc(x.path.join(',')) + '"' + (c.t === 'item' ? ' data-hitid="' + esc(c.id) + '"' : '') + ' tabindex="0" role="button">' +
         tileHtml(c) +
         '<div class="t"><div class="name">' + title + '</div><div class="sub">' + esc([root.n].concat(x.where).join(' › ')) + '</div>' + (c.t === 'item' ? metaHtml(c) : '') + '</div>' +
         '<span class="chev">' + svg('chev', 20) + '</span></div>';

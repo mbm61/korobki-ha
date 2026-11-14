@@ -8,7 +8,7 @@ from aiohttp import web
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN, EVENT_UPDATED, LOG_LIMIT, MAX_RECORDS_PER_SYNC, PULL_LIMIT
+from .const import DOMAIN, EVENT_UPDATED, LOG_LIMIT, ID_RE, LABEL_BAD_RE, MAX_RECORDS_PER_SYNC, PULL_LIMIT
 from .model import apply_batch
 
 
@@ -38,8 +38,8 @@ class SyncView(HomeAssistantView):
         since = body.get("since", 0)
         if not isinstance(since, int) or isinstance(since, bool):
             since = 0
-        device = str(body.get("device") or "")[:64]
-        label = str(body.get("label") or "")[:40]
+        device = body.get("device") if isinstance(body.get("device"), str) and ID_RE.match(body["device"]) else ""
+        label = LABEL_BAD_RE.sub("", str(body.get("label") or ""))[:40]
         all_in = body.get("records", [])
         incoming = all_in[:MAX_RECORDS_PER_SYNC]
         rest = len(all_in) - len(incoming)  # не принято в этом запросе: клиент пришлёт следующим

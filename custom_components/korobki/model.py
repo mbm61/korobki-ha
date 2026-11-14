@@ -16,7 +16,7 @@ import math
 import secrets
 from typing import Any, Callable
 
-from .const import LOST_ID, LOST_NAME, MAX_CLOCK_SKEW_MS, CONFLICT_LIMIT, PHOTO_ID_RE
+from .const import BASE_RE, COLOR_RE, ID_RE, LOST_ID, LOST_NAME, MAX_CLOCK_SKEW_MS, CONFLICT_LIMIT, PHOTO_ID_RE
 
 TYPES = ("home", "place", "box", "item", "cat", "settings")
 # поля, по которым записи сравниваются (метки u, r, dv, us в сравнение не входят)
@@ -27,8 +27,8 @@ PARENT_TYPES = {"box": ("place", "box"), "item": ("place", "box")}
 
 def clean(r: object) -> dict | None:
     """Проверка одной записи от устройства. Возвращает чистую копию или None, если запись негодная."""
-    if not isinstance(r, dict) or not isinstance(r.get("id"), str) or not r["id"] or len(r["id"]) > 64:
-        return None
+    if not isinstance(r, dict) or not isinstance(r.get("id"), str) or not ID_RE.match(r["id"]):
+        return None  # id только из букв, цифр, «_» и «-» (до 64): попадает в атрибуты HTML на устройствах
     u = r.get("u")
     if isinstance(u, bool) or not isinstance(u, (int, float)) or not math.isfinite(u) or r.get("t") not in TYPES:
         return None
@@ -39,16 +39,17 @@ def clean(r: object) -> dict | None:
     tg: list[str] = []
     if isinstance(r.get("tg"), list):
         for x in r["tg"][:50]:
-            x = str(x)[:64]
+            if not isinstance(x, str) or not ID_RE.match(x):
+                continue
             if x not in tg:
                 tg.append(x)
     us, br = r.get("us"), r.get("br")
     return {
         "id": rid,
-        "p": r.get("p") if isinstance(r.get("p"), str) and typ in ("place", "box", "item") else None,
+        "p": r.get("p") if isinstance(r.get("p"), str) and ID_RE.match(r["p"]) and typ in ("place", "box", "item") else None,
         "t": typ,
         "n": str(r.get("n", ""))[:300],
-        "c": r.get("c") if isinstance(r.get("c"), str) else None,
+        "c": r.get("c") if isinstance(r.get("c"), str) and COLOR_RE.match(r["c"]) else None,
         "q": r.get("q") if isinstance(r.get("q"), (int, float)) and not isinstance(r.get("q"), bool) else None,
         "tg": tg,
         "note": str(r.get("note", ""))[:5000],
@@ -56,10 +57,10 @@ def clean(r: object) -> dict | None:
         if isinstance(r.get("ph"), list) else [],
         "o": r.get("o") if isinstance(r.get("o"), (int, float)) and not isinstance(r.get("o"), bool) else 0,
         "qr": str(r.get("qr", ""))[:300],
-        "base": str(r.get("base", ""))[:300],
+        "base": r["base"][:300] if isinstance(r.get("base"), str) and (not r["base"] or BASE_RE.match(r["base"][:300])) else "",
         "u": int(u),
         "d": bool(r.get("d")),
-        "dv": str(r.get("dv", ""))[:64],
+        "dv": r["dv"] if isinstance(r.get("dv"), str) and ID_RE.match(r["dv"]) else "",
         "us": int(us) if isinstance(us, (int, float)) and not isinstance(us, bool) and math.isfinite(us) else None,
         "br": int(br) if isinstance(br, (int, float)) and not isinstance(br, bool) and math.isfinite(br) else None,
     }
@@ -173,6 +174,24 @@ def normalize(d: dict, now: int, bump: Callable[[], int]) -> list[dict]:
         r["dv"] = "server"
         r["r"] = bump()
         fixes.append({"id": r["id"], "n": r["n"], "t": r["t"], "what": what})
+
+    # 0. безопасность данных, пришедших из старых версий или из ручной правки файла хранилища:
+    #    записи с недопустимым id удаляются, недопустимые цвет, родитель, категории и фото очищаются
+    for rid in [k for k, r in recs.items() if not isinstance(k, str) or not ID_RE.match(k) or r.get("id") != k]:
+        del recs[rid]
+        fixes.append({"id": str(rid)[:20], "n": "", "t": "?", "what": "удалена запись с недопустимым id"})
+    for r in list(recs.values()):
+        bad = []
+        if r.get("c") is not None and not (isinstance(r["c"], str) and COLOR_RE.match(r["c"])):
+            r["c"] = None; bad.append("цвет")
+        if isinstance(r.get("tg"), list) and any(not (isinstance(x, str) and ID_RE.match(x)) for x in r["tg"]):
+            r["tg"] = [x for x in r["tg"] if isinstance(x, str) and ID_RE.match(x)]; bad.append("категории")
+        if isinstance(r.get("ph"), list) and any(not (isinstance(x, str) and PHOTO_ID_RE.match(x)) for x in r["ph"]):
+            r["ph"] = [x for x in r["ph"] if isinstance(x, str) and PHOTO_ID_RE.match(x)]; bad.append("фото")
+        if r.get("p") is not None and not (isinstance(r["p"], str) and ID_RE.match(r["p"])):
+            r["p"] = None; bad.append("родитель")
+        if bad:
+            touch(r, "очищено: " + ", ".join(bad))
 
     root_ok = live(recs.get("root")) and recs["root"]["t"] == "home"
 
