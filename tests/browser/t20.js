@@ -27,11 +27,12 @@ const until=async(f,ms=20000)=>{const t0=Date.now(); while(Date.now()-t0<ms){ tr
  log.length=0;
  await p.click('[data-toggle-add]'); await p.locator('#addForm input#fName').fill('Коробка-с-фото');
  const [fc]=await Promise.all([p.waitForEvent('filechooser'),p.click('[data-addphoto="__new"]')]); await fc.setFiles({name:'a.png',mimeType:'image/png',buffer:png}); await p.waitForTimeout(500);
- await p.locator('#addForm button[type=submit]').click(); await p.waitForTimeout(3500);
+ await p.locator('#addForm button[type=submit]').click(); await until(()=>log.some(x=>/POST sync .*Коробка-с-фото/.test(x))); await p.waitForTimeout(1000);
  // вторая коробка БЕЗ фото в том же месте: должна уйти
  await p.click('[data-toggle-add]'); await p.locator('#addForm input#fName').fill('Коробка-без-фото'); await p.locator('#addForm button[type=submit]').click(); await until(()=>Object.values(srv.recs).some(r=>r.n==='Коробка-без-фото'));
  const names=()=>Object.values(srv.recs).map(r=>r.n);
- const rec=()=>Object.values(srv.recs).find(r=>r.n==='Коробка-с-фото'); console.log('A. 400 на фото: запись на сервере БЕЗ ссылки на фото:', !!rec() && (rec().ph||[]).length===0, '| коробка без фото ушла:', names().includes('Коробка-без-фото'));
+ const rec=()=>Object.values(srv.recs).find(r=>r.n==='Коробка-с-фото'); if(!(rec()&&(rec().ph||[]).length===0)) console.log('DIAG srv', JSON.stringify(Object.values(srv.recs).map(r=>[r.n,r.ph])), 'log', JSON.stringify(log));
+ console.log('A. 400 на фото: запись на сервере БЕЗ ссылки на фото:', !!rec() && (rec().ph||[]).length===0, '| коробка без фото ушла:', names().includes('Коробка-без-фото'));
  console.log('LOG', JSON.stringify(log)); console.log('A. журнал:', log.filter(x=>/PUT/.test(x)).length>0 ? 'были попытки PUT' : 'нет PUT', '| в журнале нет DELETE:', !log.some(x=>/DELETE/.test(x)));
  // сервер починился: ручная синхронизация
  putStatus=200; await p.goto(base); await p.waitForTimeout(1500); await sh("r.querySelector('[data-sync]').click()"); await p.waitForTimeout(4000);
