@@ -77,13 +77,13 @@ class Req:
 Store.legacy={'rev':5,'root':{'id':'root','t':'home','n':'Мой дом','ch':[{'id':'p1','t':'place','n':'Кладовка','ph':[],'ch':[{'id':'b1','t':'box','n':'Инстр','ph':['0123456789abcdef'],'ch':[{'id':'i1','t':'item','n':'Молоток','q':2,'tg':['c1'],'note':'н','ph':[]}]}]}]},'settings':{'qr':'web','base':'x','cats':[{'id':'c1','n':'Инструмент','c':'#f00'}]}}
 async def main():
     h = Hass(); assert await k.async_setup(h, {}) is True
-    assert panel['module_url'].endswith('?v=0.10.0'), panel['module_url']
+    assert panel['module_url'].endswith('?v=0.10.1'), panel['module_url']
     d=h.data['korobki']['data']; R=d['recs']
     assert R['root']['n']=='Мой дом' and R['i1']['p']=='b1' and R['i1']['q']==2 and R['i1']['tg']==['c1'] and R['c1']['t']=='cat' and R['settings']['qr']=='web', R
     sv=[v for v in h.http.views if isinstance(v,k.SyncView)][0]
     import time as _t0; now=int(_t0.time()*1000)-60000
     def rec(i,u,n='x',d=False,t='item',p='b1'): return {'id':i,'p':p,'t':t,'n':n,'u':u,'d':d,'q':1}
-    st,code,out=await sv.post(Req({'since':0,'records':[]})); assert out['version']=='0.10.0' and len(out['records'])==len(R)
+    st,code,out=await sv.post(Req({'since':0,'records':[]})); assert out['version']=='0.10.1' and len(out['records'])==len(R)
     rev=out['rev']
     # новая запись принимается, возвращается эхом
     st,_,o=await sv.post(Req({'since':rev,'records':[rec('n1',now,'Новая')]})); assert [r['id'] for r in o['records']]==['n1'] and o['rev']==rev+1
@@ -108,7 +108,7 @@ async def main():
     assert (await av.get(None,'../__init__.py'))[1]==404 and (await av.get(None,'secret.txt'))[1]==404
     jv=[v for v in h.http.views if type(v).__name__=='PanelJsView'][0]
     body=(await jv.get(None)).body.decode()
-    assert '__KOROBKI_VERSION__' not in body and "var VERSION = '0.10.0';" in body, body[:300]
+    assert '__KOROBKI_VERSION__' not in body and "var VERSION = '0.10.1';" in body, body[:300]
     # поиск «где лежит»
     import os, time as _t
     R=h.data['korobki']['data']['recs']
@@ -135,7 +135,7 @@ async def main():
     cv_=[v for v in h.http.views if type(v).__name__=='CleanupView'][0]
     _,_,cx=await cv_.post(None); assert cx['removed']==2, cx
     assert not (pd/'aaaaaaaaaaaaaaaa.jpg').exists() and (pd/'0123456789abcdef.jpg').exists() and (pd/'bbbbbbbbbbbbbbbb.jpg').exists()
-    print('PY_OK 0.10.0 recs', len(h.data['korobki']['data']['recs']))
+    print('PY_OK 0.10.1 recs', len(h.data['korobki']['data']['recs']))
 
 async def main2():
     import time as T
