@@ -4,7 +4,7 @@
       function can() { return !S.sheet && !!(S.path.length || S.mode || S.q.trim()); }
       host.addEventListener('touchstart', function (e) {
         st = null; locked = false; dx = 0;
-        if (e.touches.length !== 1 || e.touches[0].clientX > window.innerWidth / 2 || !can()) return;
+        if (e.touches.length !== 1 || !can()) return;
         if (e.target && e.target.closest && e.target.closest('input, textarea, select, [data-nav]')) return;
         st = { x: e.touches[0].clientX, y: e.touches[0].clientY }; tm = Date.now(); wrap.style.transition = 'none';
       }, { passive: true });
@@ -33,6 +33,45 @@
         locked = false; dx = 0;
       }
       host.addEventListener('touchend', end); host.addEventListener('touchcancel', end);
+    })();
+
+    /* Жест 3: свайп справа налево перелистывает. Главная и место: следующее место (после последнего снова первое).
+       Внутри коробки: следующая коробка того же места (после последней снова первая). Назад — свайп вправо (жест 2) */
+    (function () {
+      var wrap = sr.querySelector('.wrap'), st = null, tm = 0;
+      function target() {
+        if (S.sheet || S.mode || S.q.trim() || S.adding) return null;
+        var T = trail(), cur = T.cur;
+        if (cur.t === 'home') {
+          var places = (root.ch || []).filter(function (x) { return x.t === 'place'; });
+          return places.length ? [places[0].id] : null;
+        }
+        var parent = T.nodes[T.nodes.length - 2];
+        if (!parent) return null;
+        var sibs = (parent.ch || []).filter(function (x) { return x.t === cur.t; });
+        if (sibs.length < 2) return null;
+        var next = sibs[(sibs.indexOf(cur) + 1) % sibs.length];
+        return S.path.slice(0, -1).concat(next.id);
+      }
+      host.addEventListener('touchstart', function (e) {
+        st = null;
+        if (e.touches.length !== 1) return;
+        if (e.target && e.target.closest && e.target.closest('input, textarea, select, [data-nav], #crumbs, #sheet')) return;
+        st = { x: e.touches[0].clientX, y: e.touches[0].clientY }; tm = Date.now();
+      }, { passive: true });
+      host.addEventListener('touchend', function (e) {
+        if (!st || !e.changedTouches || !e.changedTouches.length) { st = null; return; }
+        var dx = e.changedTouches[0].clientX - st.x, dy = e.changedTouches[0].clientY - st.y;
+        st = null;
+        if (-dx < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+        var path = target();
+        if (!path) return;
+        S.path = path; S.conf = null; render(); toTop();
+        if (wrap) {
+          wrap.style.transition = 'none'; wrap.style.transform = 'translateX(40px)'; wrap.style.opacity = '.6';
+          requestAnimationFrame(function () { requestAnimationFrame(function () { wrap.style.transition = 'transform .18s ease, opacity .18s ease'; wrap.style.transform = ''; wrap.style.opacity = ''; }); });
+        }
+      }, { passive: true });
     })();
 
     dbOpen(function (ok) { if (!ok) memOnly = true; afterDb(); });

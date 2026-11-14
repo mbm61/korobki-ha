@@ -20,7 +20,7 @@
     }
     function delHtml(id) {
       var ask = S.conf === id;
-      return '<button class="del' + (ask ? ' ask' : '') + '" data-del="' + esc(id) + '" aria-label="Удалить">' + (ask ? 'Удалить?' : svg('x', 16)) + '</button>';
+      return '<button class="del' + (ask ? ' ask' : '') + '" data-del="' + esc(id) + '" aria-label="Удалить" title="Удалить">' + (ask ? 'Удалить?' : svg('trash', 18)) + '</button>';
     }
     function cardHtml(n, acc) {
       var a = n.c || acc;
@@ -149,6 +149,6 @@
       walkAll(function (n, ids, names, a) { if (n.t === 'item' && (n.tg || []).indexOf(c.id) > -1) hits.push({ c: n, path: ids, where: names, a: a }); });
       var h = '<div class="head"><h1>#' + esc(c.n) + '</h1><div class="stat">' + (hits.length ? pl(hits.length, W.item) : 'Нет вещей') + '</div></div>';
       if (!hits.length) return h + '<div class="empty">В этой категории пока ничего нет. Откройте вещь и выберите категорию.</div>';
-      return h + '<div class="list">' + hits.map(hitCard).join('') + '</div>';
+      return h + '<div class="list dense">' + hits.map(hitCard).join('') + '</div>';
     }
 

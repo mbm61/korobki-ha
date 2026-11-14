@@ -1,6 +1,8 @@
     /* --- фильтры и поиск --- */
     function findView() {
-      var q = S.q.trim().toLowerCase().replace(/^#/, ''), f = S.f, hits = [], finding = S.mode === 'find';
+      /* Фильтры действуют только на вкладке «Фильтры». Поиск из строки ищет по всему без ограничений */
+      var q = S.q.trim().toLowerCase().replace(/^#/, ''), finding = S.mode === 'find';
+      var f = finding ? S.f : { cats: [], nocat: false, nophoto: false, sort: 'path' }, hits = [];
       var onlyItems = f.cats.length || f.nocat || f.nophoto;
       walkAll(function (c, ids, names, a) {
         if (q && !matches(c, q)) return;

@@ -332,6 +332,11 @@
     '.card.cs .tile { width: 34px; height: 34px; border-radius: 10px; }',
     '.card.cs .tile svg { width: 20px; height: 20px; }',
     '.card.cs .name { font-size: 15px; }',
+    /* плотный список (вещи в категории) */
+    '.list.dense .card { gap: 10px; padding: 7px 12px; }',
+    '.list.dense .tile { width: 34px; height: 34px; border-radius: 10px; }',
+    '.list.dense .tile svg { width: 20px; height: 20px; }',
+    '.list.dense .name { font-size: 15px; }',
     /* пустые экраны */
     '.empty { border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent); background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 8%, var(--card)) 0%, var(--card) 65%); }',
     '.eico { width: 64px; height: 64px; border-radius: 20px; display: grid; place-items: center; color: var(--a, var(--accent)); background: color-mix(in srgb, var(--a, var(--accent)) 18%, transparent); }',
@@ -1088,7 +1093,9 @@
 
     /* --- фильтры и поиск --- */
     function findView() {
-      var q = S.q.trim().toLowerCase().replace(/^#/, ''), f = S.f, hits = [], finding = S.mode === 'find';
+      /* Фильтры действуют только на вкладке «Фильтры». Поиск из строки ищет по всему без ограничений */
+      var q = S.q.trim().toLowerCase().replace(/^#/, ''), finding = S.mode === 'find';
+      var f = finding ? S.f : { cats: [], nocat: false, nophoto: false, sort: 'path' }, hits = [];
       var onlyItems = f.cats.length || f.nocat || f.nophoto;
       walkAll(function (c, ids, names, a) {
         if (q && !matches(c, q)) return;
@@ -1530,7 +1537,7 @@
     }
     function delHtml(id) {
       var ask = S.conf === id;
-      return '<button class="del' + (ask ? ' ask' : '') + '" data-del="' + esc(id) + '" aria-label="Удалить">' + (ask ? 'Удалить?' : svg('x', 16)) + '</button>';
+      return '<button class="del' + (ask ? ' ask' : '') + '" data-del="' + esc(id) + '" aria-label="Удалить" title="Удалить">' + (ask ? 'Удалить?' : svg('trash', 18)) + '</button>';
     }
     function cardHtml(n, acc) {
       var a = n.c || acc;
@@ -1659,7 +1666,7 @@
       walkAll(function (n, ids, names, a) { if (n.t === 'item' && (n.tg || []).indexOf(c.id) > -1) hits.push({ c: n, path: ids, where: names, a: a }); });
       var h = '<div class="head"><h1>#' + esc(c.n) + '</h1><div class="stat">' + (hits.length ? pl(hits.length, W.item) : 'Нет вещей') + '</div></div>';
       if (!hits.length) return h + '<div class="empty">В этой категории пока ничего нет. Откройте вещь и выберите категорию.</div>';
-      return h + '<div class="list">' + hits.map(hitCard).join('') + '</div>';
+      return h + '<div class="list dense">' + hits.map(hitCard).join('') + '</div>';
     }
 
     /* Категории при добавлении: выпадающий список с галочками и строкой «новая категория» */
@@ -2238,28 +2245,38 @@
     $('sheet').addEventListener('touchmove', function (e) {
       if (e.target.closest && !e.target.closest('.panel') && e.cancelable) e.preventDefault();
     }, { passive: false });
-    /* Жест 1: шторка (карточка вещи и др.) закрывается свайпом вниз */
+    /* Жест 1: шторка (карточка вещи и др.) закрывается свайпом вниз (от начала списка) или вверх (от конца списка) */
     (function () {
-      var sh = $('sheet'), t0 = null, panel = null, dy = 0, tm = 0;
+      var sh = $('sheet'), t0 = null, panel = null, mode = 0, dy = 0, tm = 0;
+      function setScrim(d) { var sc = sh.querySelector('.scrim'); if (sc) sc.style.opacity = String(Math.max(0, 1 - Math.abs(d) / 500)); }
       sh.addEventListener('touchstart', function (e) {
         panel = e.target.closest ? e.target.closest('.panel') : null;
-        if (!panel || e.touches.length !== 1 || panel.scrollTop > 0) { panel = null; return; }
-        t0 = { x: e.touches[0].clientX, y: e.touches[0].clientY }; dy = 0; tm = Date.now(); panel.style.transition = 'none';
+        if (!panel || e.touches.length !== 1) { panel = null; return; }
+        t0 = { x: e.touches[0].clientX, y: e.touches[0].clientY }; dy = 0; mode = 0; tm = Date.now();
       }, { passive: true });
       sh.addEventListener('touchmove', function (e) {
-        if (!panel || !t0) return;
+        if (!panel || !t0 || e.touches.length !== 1) return;
         var d = e.touches[0].clientY - t0.y, dx = Math.abs(e.touches[0].clientX - t0.x);
-        if (d <= 0 || (dx > d && dy === 0)) { if (dy === 0) { panel.style.transition = ''; panel = null; } else { dy = 0; panel.style.transform = ''; } return; }
-        if (panel.scrollTop > 0) return;
-        dy = d; panel.style.transform = 'translateY(' + d + 'px)';
-        var sc = sh.querySelector('.scrim'); if (sc) sc.style.opacity = String(Math.max(0, 1 - d / 500));
+        if (!mode) {
+          if (Math.abs(d) < 8) return;
+          if (dx > Math.abs(d)) { panel = null; return; }
+          var atTop = panel.scrollTop <= 0, atBottom = panel.scrollTop + panel.clientHeight >= panel.scrollHeight - 2;
+          if (d > 0 && atTop) mode = 1; else if (d < 0 && atBottom) mode = -1;
+          else { panel = null; return; }
+          panel.style.transition = 'none';
+        }
+        dy = mode > 0 ? Math.max(0, d) : Math.min(0, d);
+        panel.style.transform = 'translateY(' + dy + 'px)';
+        setScrim(dy);
         if (e.cancelable) e.preventDefault();
       }, { passive: false });
       function end() {
         if (!panel) return;
-        var p = panel, d = dy, fast = d / Math.max(1, Date.now() - tm) > 0.6; panel = null; t0 = null; dy = 0;
+        var p = panel, m = mode, d = Math.abs(dy), fast = d / Math.max(1, Date.now() - tm) > 0.6;
+        panel = null; t0 = null; mode = 0; dy = 0;
+        if (!m) return;
         p.style.transition = 'transform .2s ease';
-        if (d > 110 || (fast && d > 40)) { p.style.transform = 'translateY(105%)'; setTimeout(closeSheet, 190); }
+        if (d > 110 || (fast && d > 40)) { p.style.transform = 'translateY(' + (m > 0 ? '105%' : '-105%') + ')'; setTimeout(closeSheet, 190); }
         else { p.style.transform = ''; var sc = sh.querySelector('.scrim'); if (sc) sc.style.opacity = ''; }
       }
       sh.addEventListener('touchend', end); sh.addEventListener('touchcancel', end);
@@ -2271,7 +2288,7 @@
       function can() { return !S.sheet && !!(S.path.length || S.mode || S.q.trim()); }
       host.addEventListener('touchstart', function (e) {
         st = null; locked = false; dx = 0;
-        if (e.touches.length !== 1 || e.touches[0].clientX > window.innerWidth / 2 || !can()) return;
+        if (e.touches.length !== 1 || !can()) return;
         if (e.target && e.target.closest && e.target.closest('input, textarea, select, [data-nav]')) return;
         st = { x: e.touches[0].clientX, y: e.touches[0].clientY }; tm = Date.now(); wrap.style.transition = 'none';
       }, { passive: true });
@@ -2300,6 +2317,45 @@
         locked = false; dx = 0;
       }
       host.addEventListener('touchend', end); host.addEventListener('touchcancel', end);
+    })();
+
+    /* Жест 3: свайп справа налево перелистывает. Главная и место: следующее место (после последнего снова первое).
+       Внутри коробки: следующая коробка того же места (после последней снова первая). Назад — свайп вправо (жест 2) */
+    (function () {
+      var wrap = sr.querySelector('.wrap'), st = null, tm = 0;
+      function target() {
+        if (S.sheet || S.mode || S.q.trim() || S.adding) return null;
+        var T = trail(), cur = T.cur;
+        if (cur.t === 'home') {
+          var places = (root.ch || []).filter(function (x) { return x.t === 'place'; });
+          return places.length ? [places[0].id] : null;
+        }
+        var parent = T.nodes[T.nodes.length - 2];
+        if (!parent) return null;
+        var sibs = (parent.ch || []).filter(function (x) { return x.t === cur.t; });
+        if (sibs.length < 2) return null;
+        var next = sibs[(sibs.indexOf(cur) + 1) % sibs.length];
+        return S.path.slice(0, -1).concat(next.id);
+      }
+      host.addEventListener('touchstart', function (e) {
+        st = null;
+        if (e.touches.length !== 1) return;
+        if (e.target && e.target.closest && e.target.closest('input, textarea, select, [data-nav], #crumbs, #sheet')) return;
+        st = { x: e.touches[0].clientX, y: e.touches[0].clientY }; tm = Date.now();
+      }, { passive: true });
+      host.addEventListener('touchend', function (e) {
+        if (!st || !e.changedTouches || !e.changedTouches.length) { st = null; return; }
+        var dx = e.changedTouches[0].clientX - st.x, dy = e.changedTouches[0].clientY - st.y;
+        st = null;
+        if (-dx < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+        var path = target();
+        if (!path) return;
+        S.path = path; S.conf = null; render(); toTop();
+        if (wrap) {
+          wrap.style.transition = 'none'; wrap.style.transform = 'translateX(40px)'; wrap.style.opacity = '.6';
+          requestAnimationFrame(function () { requestAnimationFrame(function () { wrap.style.transition = 'transform .18s ease, opacity .18s ease'; wrap.style.transform = ''; wrap.style.opacity = ''; }); });
+        }
+      }, { passive: true });
     })();
 
     dbOpen(function (ok) { if (!ok) memOnly = true; afterDb(); });

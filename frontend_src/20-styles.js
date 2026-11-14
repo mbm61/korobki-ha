@@ -182,6 +182,11 @@
     '.card.cs .tile { width: 34px; height: 34px; border-radius: 10px; }',
     '.card.cs .tile svg { width: 20px; height: 20px; }',
     '.card.cs .name { font-size: 15px; }',
+    /* плотный список (вещи в категории) */
+    '.list.dense .card { gap: 10px; padding: 7px 12px; }',
+    '.list.dense .tile { width: 34px; height: 34px; border-radius: 10px; }',
+    '.list.dense .tile svg { width: 20px; height: 20px; }',
+    '.list.dense .name { font-size: 15px; }',
     /* пустые экраны */
     '.empty { border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent); background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 8%, var(--card)) 0%, var(--card) 65%); }',
     '.eico { width: 64px; height: 64px; border-radius: 20px; display: grid; place-items: center; color: var(--a, var(--accent)); background: color-mix(in srgb, var(--a, var(--accent)) 18%, transparent); }',
