@@ -66,6 +66,55 @@ def clean(r: object) -> dict | None:
     }
 
 
+def check_records(recs: object) -> list[dict]:
+    """Строгая проверка набора записей (для резервной копии и восстановления). Ничего не меняет.
+
+    Возвращает список {id, why}. Проверяется: ключ совпадает с id; запись проходит clean() БЕЗ потери данных
+    (ничего не пришлось бы «чинить»); родитель существует, подходит по типу и не удалён; нет циклов;
+    категории и фото записи имеют допустимый вид.
+    """
+    bad: list[dict] = []
+    if not isinstance(recs, dict):
+        return [{"id": "", "why": "записи не словарь"}]
+    ok: dict[str, dict] = {}
+    for k, r in recs.items():
+        c = clean(r) if isinstance(r, dict) else None
+        if c is None:
+            bad.append({"id": str(k)[:64], "why": "запись негодная (id, тип или метка времени)"})
+        elif r.get("id") != k:
+            bad.append({"id": str(k)[:64], "why": "ключ не совпадает с id"})
+        elif not same_content(r, c):
+            bad.append({"id": k, "why": "содержимое не проходит проверку (поле неверного вида)"})
+        else:
+            ok[k] = r
+    for k, r in ok.items():
+        if r.get("d") or r["t"] in ("home", "cat", "settings"):
+            continue
+        p = ok.get(r.get("p") or "")
+        if p is None or p.get("d"):
+            bad.append({"id": k, "why": "нет родителя"})
+            continue
+        if r["t"] == "place" and p["t"] != "home" or r["t"] in PARENT_TYPES and p["t"] not in PARENT_TYPES[r["t"]]:
+            bad.append({"id": k, "why": "родитель неподходящего типа"})
+            continue
+        seen, cur = {k}, p
+        while cur is not None and cur["t"] not in ("home",):
+            if cur["id"] in seen:
+                bad.append({"id": k, "why": "цикл в дереве"})
+                break
+            seen.add(cur["id"])
+            cur = ok.get(cur.get("p") or "")
+        else:
+            if cur is None:
+                bad.append({"id": k, "why": "цепочка родителей не доходит до корня"})
+        for t in r.get("tg") or []:
+            c = ok.get(t)
+            if c is None or c["t"] != "cat":
+                bad.append({"id": k, "why": "категория не найдена"})
+                break
+    return bad
+
+
 def same_content(a: dict, b: dict) -> bool:
     return all(a.get(k) == b.get(k) for k in CONTENT)
 

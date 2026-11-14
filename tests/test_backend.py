@@ -372,4 +372,58 @@ async def main7():
     assert d['recs']['q1']['n']=='three' and o6['stale']==['q1']
     assert d['devices']['A']['us']>=6
     print('PY7_OK useq')
-asyncio.run(main()); asyncio.run(main2()); asyncio.run(main3()); asyncio.run(main4()); asyncio.run(main5()); asyncio.run(main6()); asyncio.run(main7())
+async def main8():
+    # п.9 копии: строгая проверка записей, фото рядом с копиями, возврат пропавших фото, предупреждение о проблемах
+    import time as T, os
+    CN=sys.modules['korobki.const']; B=sys.modules['korobki.backup']; Mo=sys.modules['korobki.model']
+    folder=pathlib.Path(tmp)/CN.BACKUP_DIR; shutil.rmtree(folder, ignore_errors=True)
+    Store.legacy=None
+    h=Hass(); assert await k.async_setup(h,{}) is True
+    st=h.data['korobki']; d=st['data']; pd=st['photo_dir']; now=int(T.time()*1000)
+    for f in pd.glob('*.jpg'): f.unlink()
+    shutil.rmtree(folder, ignore_errors=True)
+    def R(id,t,p,n,**x): 
+        r={'id':id,'t':t,'p':p,'n':n,'c':None,'q':1 if t=='item' else None,'tg':[],'note':'','ph':[],'o':0,'qr':'','base':'','u':now,'d':False,'dv':'','us':None,'r':1}; r.update(x); return r
+    d['recs'].clear(); d['recs'].update({x['id']:x for x in [R('root','home',None,'Дом'),R('p1','place','root','Гараж'),R('b1','box','p1','Ящик',ph=['aaaaaaaaaaaaaaaa']),R('i1','item','b1','Дрель')]})
+    (pd/'aaaaaaaaaaaaaaaa.jpg').write_bytes(b'\xff\xd8\xffFULL'); (pd/'aaaaaaaaaaaaaaaa_t.jpg').write_bytes(b'\xff\xd8\xffTHUMB')
+    assert Mo.check_records(d['recs'])==[], Mo.check_records(d['recs'])
+    # ---- проверка записей ----
+    bad=lambda mut: Mo.check_records({**{k:dict(v) for k,v in d['recs'].items()}, **mut})
+    assert any(b['id']=='x1' for b in bad({'x1':R('x1','place','root','n',c='red;x')}))                # цвет
+    assert any(b['id']=='x2' for b in bad({'x2':R('x2','item','nope','n')}))                            # нет родителя
+    assert any(b['id']=='x3' for b in bad({'x3':R('x3','item','b1','n',ph=['../etc'])}))              # фото
+    assert any(b['id']=='x4' for b in bad({'x4':R('x4','item','b1','n',tg=['zz'])}))                    # нет категории
+    assert any(b['id']=='k9' for b in bad({'k9':R('other','item','b1','n')}))                           # ключ != id
+    assert any(b['id']=='x5' for b in bad({'x5':R('x5','item','b1',123)}))                              # название не строка
+    cyc=bad({'c1':R('c1','box','c2','n'),'c2':R('c2','box','c1','n')}); assert any('цикл' in b['why'] or 'корн' in b['why'] for b in cyc), cyc
+    assert any(b['id']=='x6' for b in bad({'x6':R('x6','place','b1','n')}))                             # место внутри коробки
+    # ---- копия: проверка + фото ----
+    notes.clear()
+    s1=await B.run_backup(h,'manual'); assert s1['ok'] and s1['bad']==0 and s1['photos']==1 and s1['photos_copied']==2 and s1['photos_missing']==0, s1
+    mir=folder/'photos'; assert {f.name for f in mir.glob('*.jpg')}=={'aaaaaaaaaaaaaaaa.jpg','aaaaaaaaaaaaaaaa_t.jpg'}
+    j=json.loads((folder/s1['name']).read_text('utf-8')); assert j['photos']==['aaaaaaaaaaaaaaaa']
+    assert not any(n[1]=='korobki_backup_invalid' and n[0]=='create' for n in notes)
+    s2=await B.run_backup(h,'manual'); assert s2['photos_copied']==0, s2   # неизменяемые файлы повторно не копируются
+    # ---- пропавшее фото возвращается ----
+    for f in pd.glob('*.jpg'): f.unlink()
+    n=B.restore_photos(pd, mir, B.used_photos(d['recs'])); assert n==2 and (pd/'aaaaaaaaaaaaaaaa.jpg').read_bytes()==b'\xff\xd8\xffFULL'
+    assert B.restore_photos(pd, mir, B.used_photos(d['recs']))==0     # на месте — не трогаем
+    # ---- ссылка на фото без файла нигде ----
+    d['recs']['i1']['ph']=['bbbbbbbbbbbbbbbb']; notes.clear()
+    s3=await B.run_backup(h,'manual'); assert s3['ok'] and s3['photos_missing']==1, s3
+    assert any(n[0]=='create' and n[1]=='korobki_backup_invalid' for n in notes), notes
+    # ---- повреждённая запись: копия сделана, но об ошибке сказано ----
+    d['recs']['i1']['ph']=[]; d['recs']['p1']['c']='javascript:1'; notes.clear()
+    s4=await B.run_backup(h,'manual'); assert s4['ok'] and s4['bad']==3 and s4['bad_list'][0]['id']=='p1', s4   # плюс потомки испорченного места
+    assert any(n[0]=='create' and n[1]=='korobki_backup_invalid' for n in notes)
+    d['recs']['p1']['c']=None; notes.clear()
+    s5=await B.run_backup(h,'manual'); assert s5['bad']==0 and ('dismiss','korobki_backup_invalid') in notes
+    # ---- чистка зеркала: фото, которых нет ни в одной копии, удаляются ----
+    d['recs']['b1']['ph']=[]
+    for f in B._list(folder): (folder/f['name']).unlink()
+    s6=await B.run_backup(h,'manual'); assert s6['photos_pruned']==2 and not list(mir.glob('*.jpg')), s6
+    # ---- запуск: пропавшее фото возвращается при старте ----
+    d['recs']['b1']['ph']=['aaaaaaaaaaaaaaaa']; (pd/'aaaaaaaaaaaaaaaa.jpg').write_bytes(b'\xff\xd8\xffFULL'); await B.run_backup(h,'manual')
+    (pd/'aaaaaaaaaaaaaaaa.jpg').unlink(); await B.async_setup_backup(h); assert (pd/'aaaaaaaaaaaaaaaa.jpg').exists()
+    print('PY8_OK backup validation + photos')
+asyncio.run(main()); asyncio.run(main2()); asyncio.run(main3()); asyncio.run(main4()); asyncio.run(main5()); asyncio.run(main6()); asyncio.run(main7()); asyncio.run(main8())

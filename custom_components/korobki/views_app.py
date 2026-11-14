@@ -8,7 +8,7 @@ from aiohttp import web
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import HomeAssistant
 
-from .const import STATIC_URL
+from .const import DOMAIN, STATIC_URL
 
 APP_FILES = {
     "index.html": "text/html",
@@ -49,6 +49,10 @@ class AppView(HomeAssistantView):
         headers = {"Cache-Control": "no-cache"}
         if filename == "sw.js":
             headers["Service-Worker-Allowed"] = "/korobki_app/"
+            headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            # версия в тексте воркера: с каждым релизом файл меняется, и браузер ставит новый воркер
+            version = str(self._hass.data.get(DOMAIN, {}).get("version", "dev"))
+            body = body.replace(b"__KOROBKI_VERSION__", version.encode("utf-8"))
         return web.Response(body=body, content_type=ctype, headers=headers)
 
 

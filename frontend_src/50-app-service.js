@@ -81,6 +81,11 @@
         if (r.p != null && !okId(r.p)) return why(id, 'недопустимый id родителя');
         if (!REC_TYPES[r.t]) return why(id, 'неизвестный тип «' + r.t + '»');
         if (r.n != null && typeof r.n !== 'string') return why(id, 'название не строка');
+        if (r.note != null && typeof r.note !== 'string') return why(id, 'заметка не строка');
+        if (r.u != null && (typeof r.u !== 'number' || !isFinite(r.u))) return why(id, 'неверная метка времени');
+        if (r.o != null && (typeof r.o !== 'number' || !isFinite(r.o))) return why(id, 'неверный порядок');
+        if (r.d != null && typeof r.d !== 'boolean') return why(id, 'признак удаления не логический');
+        if ((r.qr != null && typeof r.qr !== 'string') || (r.base != null && typeof r.base !== 'string')) return why(id, 'служебное поле не строка');
         if (r.tg != null && !Array.isArray(r.tg)) return why(id, 'категории не список');
         if (r.ph != null && !Array.isArray(r.ph)) return why(id, 'фото не список');
         if (r.t === 'item' && r.q != null && (typeof r.q !== 'number' || !isFinite(r.q) || r.q < 0)) return why(id, 'неверное количество');

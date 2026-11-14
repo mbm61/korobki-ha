@@ -298,4 +298,5 @@
     window.addEventListener('online', onOnline);
     window.addEventListener('offline', onOffline);
     window.addEventListener('pagehide', doPersist);
-
+    /* страница-оболочка (приложение) сообщила, что установился новый воркер, то есть вышла новая версия */
+    window.addEventListener('korobki-update', function () { S.stale = true; renderSync(); });

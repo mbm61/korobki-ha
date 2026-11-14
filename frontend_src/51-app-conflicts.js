@@ -85,8 +85,10 @@
       h += '<div class="sec">Автокопия на сервере</div>';
       if (!bk) h += '<div class="hint">' + (v.bkErr ? 'Состояние автокопий недоступно (нужна версия сервера 0.8.0 и связь).' : 'Проверяю…') + '</div>';
       else {
-        h += '<div class="hint">Home Assistant сам сохраняет копию данных раз в ' + (bk.hours || 24) + ' ч в папку ' + esc(bk.dir) + ' (хранится последних: ' + bk.keep + '). Фото в неё не входят.</div>';
+        h += '<div class="hint">Home Assistant сам сохраняет копию данных раз в ' + (bk.hours || 24) + ' ч в папку ' + esc(bk.dir) + ' (хранится последних: ' + bk.keep + '). Фото копируются рядом, в папку photos, и сами возвращаются на место при запуске сервера, если пропали.</div>';
         if (lb && lb.ok) h += '<div class="hint">Последняя: ' + new Date(lb.t).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + (lb.size ? ', ' + mb(lb.size) : '') + (lb.recs ? ', записей: ' + lb.recs : '') + '. Всего копий: ' + bk.count + '.</div>';
+        if (lb && lb.ok && (lb.bad || lb.photos_missing)) h += '<div class="warn2">В данных найдены проблемы: ' + (lb.bad ? 'записей с ошибками ' + (+lb.bad) + '; ' : '') + (lb.photos_missing ? 'фото без файла ' + (+lb.photos_missing) + '; ' : '') + 'подробности в уведомлении Home Assistant.</div>';
+        if (lb && lb.ok) {}
         else if (lb) h += '<div class="warn2">Последняя копия не создана: ' + esc(lb.error || 'ошибка') + '. В Home Assistant создано уведомление.</div>';
         else h += '<div class="warn2">Автокопий ещё нет.</div>';
       }

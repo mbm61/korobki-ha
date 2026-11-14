@@ -123,6 +123,18 @@
   document.addEventListener('focusout', function () { setTimeout(unshift, 60); setTimeout(unshift, 350); }, true);
   if (window.visualViewport) window.visualViewport.addEventListener('resize', function () { setTimeout(unshift, 60); });
   window.addEventListener('orientationchange', function () { setTimeout(unshift, 300); });
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+  /* Обновление: новый воркер появляется вместе с новой версией. Если страница уже работала под старым, сообщаем панели:
+     она покажет кнопку «Обновить». Проверка идёт при запуске, при возврате в приложение и раз в 30 минут. */
+  if ('serviceWorker' in navigator) {
+    var hadCtl = !!navigator.serviceWorker.controller, reg = null;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (hadCtl) window.dispatchEvent(new Event('korobki-update'));
+      hadCtl = true;
+    });
+    navigator.serviceWorker.register('sw.js').then(function (r) { reg = r; r.update().catch(function () {}); }).catch(function () {});
+    var chk = function () { if (reg) reg.update().catch(function () {}); };
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') chk(); });
+    setInterval(chk, 30 * 60 * 1000);
+  }
 })();
 </script></body></html>

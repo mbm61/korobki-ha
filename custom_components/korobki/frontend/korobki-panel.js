@@ -1221,6 +1221,11 @@
         if (r.p != null && !okId(r.p)) return why(id, 'недопустимый id родителя');
         if (!REC_TYPES[r.t]) return why(id, 'неизвестный тип «' + r.t + '»');
         if (r.n != null && typeof r.n !== 'string') return why(id, 'название не строка');
+        if (r.note != null && typeof r.note !== 'string') return why(id, 'заметка не строка');
+        if (r.u != null && (typeof r.u !== 'number' || !isFinite(r.u))) return why(id, 'неверная метка времени');
+        if (r.o != null && (typeof r.o !== 'number' || !isFinite(r.o))) return why(id, 'неверный порядок');
+        if (r.d != null && typeof r.d !== 'boolean') return why(id, 'признак удаления не логический');
+        if ((r.qr != null && typeof r.qr !== 'string') || (r.base != null && typeof r.base !== 'string')) return why(id, 'служебное поле не строка');
         if (r.tg != null && !Array.isArray(r.tg)) return why(id, 'категории не список');
         if (r.ph != null && !Array.isArray(r.ph)) return why(id, 'фото не список');
         if (r.t === 'item' && r.q != null && (typeof r.q !== 'number' || !isFinite(r.q) || r.q < 0)) return why(id, 'неверное количество');
@@ -1421,8 +1426,10 @@
       h += '<div class="sec">Автокопия на сервере</div>';
       if (!bk) h += '<div class="hint">' + (v.bkErr ? 'Состояние автокопий недоступно (нужна версия сервера 0.8.0 и связь).' : 'Проверяю…') + '</div>';
       else {
-        h += '<div class="hint">Home Assistant сам сохраняет копию данных раз в ' + (bk.hours || 24) + ' ч в папку ' + esc(bk.dir) + ' (хранится последних: ' + bk.keep + '). Фото в неё не входят.</div>';
+        h += '<div class="hint">Home Assistant сам сохраняет копию данных раз в ' + (bk.hours || 24) + ' ч в папку ' + esc(bk.dir) + ' (хранится последних: ' + bk.keep + '). Фото копируются рядом, в папку photos, и сами возвращаются на место при запуске сервера, если пропали.</div>';
         if (lb && lb.ok) h += '<div class="hint">Последняя: ' + new Date(lb.t).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + (lb.size ? ', ' + mb(lb.size) : '') + (lb.recs ? ', записей: ' + lb.recs : '') + '. Всего копий: ' + bk.count + '.</div>';
+        if (lb && lb.ok && (lb.bad || lb.photos_missing)) h += '<div class="warn2">В данных найдены проблемы: ' + (lb.bad ? 'записей с ошибками ' + (+lb.bad) + '; ' : '') + (lb.photos_missing ? 'фото без файла ' + (+lb.photos_missing) + '; ' : '') + 'подробности в уведомлении Home Assistant.</div>';
+        if (lb && lb.ok) {}
         else if (lb) h += '<div class="warn2">Последняя копия не создана: ' + esc(lb.error || 'ошибка') + '. В Home Assistant создано уведомление.</div>';
         else h += '<div class="warn2">Автокопий ещё нет.</div>';
       }
@@ -2202,7 +2209,8 @@
     window.addEventListener('online', onOnline);
     window.addEventListener('offline', onOffline);
     window.addEventListener('pagehide', doPersist);
-
+    /* страница-оболочка (приложение) сообщила, что установился новый воркер, то есть вышла новая версия */
+    window.addEventListener('korobki-update', function () { S.stale = true; renderSync(); });
     /* --- запуск: сначала данные с устройства, потом синхронизация --- */
     function afterDb() {
       if (booted) return;

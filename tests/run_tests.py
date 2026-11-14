@@ -42,7 +42,7 @@ run("node --check service worker", ["node", "--check", "custom_components/korobk
 for f in sorted(glob.glob("frontend_src/*.js")):
     pass  # фрагменты не самостоятельные: синтаксис проверяется в собранном файле
 run("бэкенд", [sys.executable, "-I", "tests/test_backend.py"],
-    must=[f"{k}_OK" for k in ("PY", "PY2", "PY3", "PY4", "PY5", "PY6", "PY7")])
+    must=[f"{k}_OK" for k in ("PY", "PY2", "PY3", "PY4", "PY5", "PY6", "PY7", "PY8")])
 
 # что должен напечатать каждый браузерный тест (иначе он не считается пройденным)
 BROWSER = {
@@ -58,6 +58,7 @@ BROWSER = {
     "t19": [r"UI qty right after response: 3", r"server q after next sync: 3 .*UI: 3", r"converged: true"],
     "t21": [r"useq на диске до каждого запроса: true", r"правка отправлена повторно: true", r"ревизией сервера: true",
             r"правка не потеряна: сервер q = 2 \| UI = 2", r"лишних отправок нет: true"],
+    "t22": [r"sw active: active", r"cache versioned: true", r"network fresh panel:\s+true", r"offline shell loads: true"],
     "t20": [r"запись на сервере БЕЗ ссылки на фото: true", r"в журнале нет DELETE: true",
             r"запись ссылается на фото: true", r"сначала PUT фото, потом запись: true",
             r"DELETE после POST записи: true", r"на сервере у записи нет фото: true", r"файл удалён: true"],
