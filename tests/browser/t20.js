@@ -16,20 +16,25 @@ const server=http.createServer((req,res)=>{ const u=req.url.split('?')[0];
  res.statusCode=404;res.end();});
 (async()=>{ await new Promise(r=>server.listen(0,r)); const base='http://localhost:'+server.address().port+'/korobki_app/index.html';
  const b=await chromium.launch(); const ctx=await b.newContext({viewport:{width:440,height:956},hasTouch:true,isMobile:true});
- const p=await ctx.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
+ const p=await ctx.newPage(); if(process.env.CPU_SLOW){ const cdp=await ctx.newCDPSession(p); await cdp.send('Emulation.setCPUThrottlingRate',{rate:+process.env.CPU_SLOW}); } const errs=[]; p.on('pageerror',e=>errs.push(e.message));
 const until=async(f,ms=20000)=>{const t0=Date.now(); while(Date.now()-t0<ms){ try{ if(await f()) return true; }catch(e){} await p.waitForTimeout(200);} return false; };
  await p.addInitScript(()=>{try{localStorage.setItem('korobki-token','t')}catch(e){}});
  const sh=(s)=>p.evaluate(`(()=>{const r=document.querySelector('korobki-panel').shadowRoot;${s}})()`);
  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAFUlEQVR42mP8z8BQz0AEYBxVSF+FABJADveWkH6oAAAAAElFTkSuQmCC','base64');
  await p.goto(base); await p.waitForTimeout(1200); await p.click('[data-seed]'); await p.waitForTimeout(2500);
  await p.click('.g >> nth=0'); await p.waitForTimeout(300);
- // коробка С фото, сервер отвергает фото кодом 400
+// коробка С фото: сначала создаём без фото и даём ей уйти на сервер (так порядок не зависит от скорости машины)
  log.length=0;
  await p.click('[data-toggle-add]'); await p.locator('#addForm input#fName').fill('Коробка-с-фото');
- const [fc]=await Promise.all([p.waitForEvent('filechooser'),p.click('[data-addphoto="__new"]')]); await fc.setFiles({name:'a.png',mimeType:'image/png',buffer:png}); await p.waitForTimeout(500);
- await p.locator('#addForm button[type=submit]').click(); await until(()=>log.some(x=>/POST sync .*Коробка-с-фото/.test(x))); await p.waitForTimeout(1000);
+ await p.locator('#addForm button[type=submit]').click(); await until(()=>Object.values(srv.recs).some(r=>r.n==='Коробка-с-фото'));
  // вторая коробка БЕЗ фото в том же месте: должна уйти
  await p.click('[data-toggle-add]'); await p.locator('#addForm input#fName').fill('Коробка-без-фото'); await p.locator('#addForm button[type=submit]').click(); await until(()=>Object.values(srv.recs).some(r=>r.n==='Коробка-без-фото'));
+ await p.waitForTimeout(800);
+ // теперь прикрепляем фото к первой коробке: сервер отвергает фото кодом 400, запись должна остаться без ссылки
+ await sh("const c=[...r.querySelectorAll('[data-open]')].find(x=>/Коробка-с-фото/.test(x.textContent)); c.click()"); await p.waitForTimeout(500);
+ await sh("r.querySelector('[data-edit]').click()"); await p.waitForTimeout(1000);
+ const [fc]=await Promise.all([p.waitForEvent('filechooser'),p.locator('[data-addphoto]:not([data-addphoto="__new"])').first().click()]); await fc.setFiles({name:'a.png',mimeType:'image/png',buffer:png}); await p.waitForTimeout(1500);
+ await until(()=>log.some(x=>/PUT photo/.test(x)));
  const names=()=>Object.values(srv.recs).map(r=>r.n);
  const rec=()=>Object.values(srv.recs).find(r=>r.n==='Коробка-с-фото'); await until(()=>!!rec());
  console.log('A. 400 на фото: запись на сервере БЕЗ ссылки на фото:', !!rec() && (rec().ph||[]).length===0, '| коробка без фото ушла:', names().includes('Коробка-без-фото'));
