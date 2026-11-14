@@ -28,15 +28,19 @@
           return x;
         });
         var prevSince = since;
-        return call('POST', '/api/korobki/sync', { since: since, records: list, device: device, label: deviceLabel() }).then(function (r) { return r.json(); }).then(function (j) {
-          var changed = applyRemote(j.records || [], sent);
+        return persistWait().then(function () {   // номера правок уже на диске, потом запрос
+          return call('POST', '/api/korobki/sync', { since: since, records: list, device: device, label: deviceLabel() });
+        }).then(function (r) { return r.json(); }).then(function (j) {
+          var uPrev = useq, stale = Array.isArray(j.stale) ? j.stale : [];
+          if (typeof j.ushi === 'number' && isFinite(j.ushi) && j.ushi > useq) useq = Math.floor(j.ushi);   // счётчик не отстаёт от сервера
+          var changed = applyRemote(j.records || [], sent, stale);
           since = j.rev; everSynced = true; nconf = j.nconf || 0;
           S.stale = !!(j.version && VERSION.indexOf('__') !== 0 && j.version !== VERSION);
           tot.nc += (j.conflicts || []).length; tot.fixes += j.fixes || 0;
           if (changed) { buildTree(); render(); }
           doPersist();
           var held2 = heldIds(), more = !!j.more, leftNow = Object.keys(dirty).filter(function (id) { return recs[id] && !held2[id]; }).length;
-          var progress = more ? since !== prevSince : leftNow < left;
+          var progress = more ? since !== prevSince : (leftNow < left || (stale.length > 0 && useq > uPrev));
           if ((more || leftNow > 0) && progress && ++steps < 200) {
             if (leftNow > 0 || more) { net = 'sync'; renderSync(); }
             return step();

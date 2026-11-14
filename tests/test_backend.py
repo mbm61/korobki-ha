@@ -166,7 +166,8 @@ async def main2():
     o=await push('A',[R('it','item','bx','Старая',u=now+500,dv='A',us=11,br=r1)])
     assert o['conflicts'][0]['win']=='server' and o['conflicts'][0]['lost']['n']=='Старая' and [x for x in o['records'] if x['id']=='it'][0]['n']=='От B' and o['nconf']==2
     # 3) повтор устаревшей пачки того же устройства игнорируется
-    o=await push('B',[R('it','item','bx','Повтор',u=now+9000,dv='B',us=1,br=r3)]); assert [x for x in o['records'] if x['id']=='it'][0]['n']=='От B'
+    # (настоящий повтор несёт старую ревизию br; если устройство видело текущую версию, правка новее — см. PY7)
+    o=await push('B',[R('it','item','bx','Повтор',u=now+9000,dv='B',us=1,br=r1)]); assert [x for x in o['records'] if x['id']=='it'][0]['n']=='От B' and o['stale']==['it']
     # 4) метка времени из будущего заменяется временем сервера
     o=await push('C',[R('fut','item','bx','Из будущего',u=now+86400000,dv='C',us=1)]); f=[x for x in o['records'] if x['id']=='fut'][0]; assert f['u']<now+60000, f['u']
     assert d['log'][-1]['clk']==1
@@ -337,4 +338,38 @@ async def main6():
     o=(await sv.post(Req({'since':0,'device':'A','label':'a','records':[{'id':'v1','t':'place','p':'root','n':'fixed','u':now+10,'dv':'A','us':2,'br':d['rev']}]})))[2]
     assert d['recs']['v1']['n']=='fixed' and d['recs']['v1']['dv']=='A'
     print('PY6_OK device id')
-asyncio.run(main()); asyncio.run(main2()); asyncio.run(main3()); asyncio.run(main4()); asyncio.run(main5()); asyncio.run(main6())
+async def main7():
+    # п.6 счётчик правок: повтор запроса идемпотентен, откат счётчика не теряет правку, сервер сообщает ushi
+    import time as T
+    Store.legacy=None
+    h=Hass(); assert await k.async_setup(h,{}) is True
+    sv=[v for v in h.http.views if type(v).__name__=='SyncView'][0]
+    d=h.data['korobki']['data']; now=int(T.time()*1000)
+    root={'id':'root','t':'home','p':None,'n':'Дом','u':now}
+    batch=[root,{'id':'q1','t':'place','p':'root','n':'one','u':now,'us':5}]
+    o1=(await sv.post(Req({'since':0,'device':'A','label':'a','records':batch})))[2]
+    assert o1['ushi']==5 and not o1['stale'], o1
+    rev1=d['rev']; r1=dict(d['recs']['q1'])
+    o2=(await sv.post(Req({'since':0,'device':'A','label':'a','records':batch})))[2]   # тот же запрос ещё раз (обрыв связи, повтор)
+    assert d['rev']==rev1 and d['recs']['q1']==r1 and not o2['stale'], 'повтор запроса изменил данные'
+    for _ in range(3): await sv.post(Req({'since':0,'device':'A','label':'a','records':batch}))
+    assert d['rev']==rev1
+    # сбой на устройстве: счётчик откатился, новая правка пришла с номером 5 на старой ревизии
+    edit2=[{'id':'q1','t':'place','p':'root','n':'two','u':now+10,'us':5,'br':0}]
+    o3=(await sv.post(Req({'since':0,'device':'A','label':'a','records':edit2})))[2]
+    assert o3['stale']==['q1'] and o3['ushi']>=5 and d['recs']['q1']['n']=='one', o3
+    # клиент поднимает счётчик и шлёт заново поверх текущей версии
+    edit2=[{'id':'q1','t':'place','p':'root','n':'two','u':now+10,'us':o3['ushi']+1,'br':d['recs']['q1']['r']}]
+    o4=(await sv.post(Req({'since':0,'device':'A','label':'a','records':edit2})))[2]
+    assert d['recs']['q1']['n']=='two' and not o4['stale'] and o4['ushi']==6, o4
+    # счётчик откатился, но устройство видело текущую версию: правка принимается сразу
+    edit3=[{'id':'q1','t':'place','p':'root','n':'three','u':now+20,'us':1,'br':d['recs']['q1']['r']}]
+    o5=(await sv.post(Req({'since':0,'device':'A','label':'a','records':edit3})))[2]
+    assert d['recs']['q1']['n']=='three' and not o5['stale'], o5
+    # старый повтор (отстаёт и по счётчику, и по ревизии) правку не затирает
+    old=[{'id':'q1','t':'place','p':'root','n':'two','u':now+10,'us':3,'br':0}]
+    o6=(await sv.post(Req({'since':0,'device':'A','label':'a','records':old})))[2]
+    assert d['recs']['q1']['n']=='three' and o6['stale']==['q1']
+    assert d['devices']['A']['us']>=6
+    print('PY7_OK useq')
+asyncio.run(main()); asyncio.run(main2()); asyncio.run(main3()); asyncio.run(main4()); asyncio.run(main5()); asyncio.run(main6()); asyncio.run(main7())

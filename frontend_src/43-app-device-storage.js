@@ -20,8 +20,20 @@
     function dbPut(store, key, val) { if (!DB) return; try { DB.transaction(store, 'readwrite').objectStore(store).put(val, key); } catch (e) {} }
     function dbDel(store, key) { if (!DB) return; try { DB.transaction(store, 'readwrite').objectStore(store).delete(key); } catch (e) {} }
     function persist(now) { clearTimeout(persistT); persistT = setTimeout(doPersist, now ? 0 : 250); }
-    function doPersist() {
+    function stateObj() {
+      return { recs: recs, dirty: Object.keys(dirty), upq: upq, delq: delq, since: since, device: device, useq: useq, nconf: nconf, synced: everSynced, dsince: dsince };
+    }
+    function doPersist() { clearTimeout(persistT); dbPut('kv', 'state', stateObj()); }
+    /* Запись состояния с ожиданием подтверждения от базы: счётчик правок useq должен быть на диске ДО запроса,
+       иначе после сбоя он откатится назад, а сервер уже мог принять правки с большими номерами. */
+    function persistWait() {
       clearTimeout(persistT);
-      dbPut('kv', 'state', { recs: recs, dirty: Object.keys(dirty), upq: upq, delq: delq, since: since, device: device, useq: useq, nconf: nconf, synced: everSynced, dsince: dsince });
+      return new Promise(function (res) {
+        if (!DB) { res(); return; }
+        try {
+          var tx = DB.transaction('kv', 'readwrite'); tx.objectStore('kv').put(stateObj(), 'state');
+          tx.oncomplete = function () { res(); }; tx.onerror = tx.onabort = function () { res(); };
+        } catch (e) { res(); }
+      });
     }
 

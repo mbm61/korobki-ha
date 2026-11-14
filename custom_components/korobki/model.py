@@ -95,7 +95,7 @@ def apply_batch(d: dict, incoming: list, device: str, now: int) -> dict:
     recs = d["recs"]
     res: dict[str, Any] = {
         "sent": len(incoming), "accepted": 0, "same": 0, "ignored": 0, "rejected": 0, "clock": 0,
-        "conflicts": [], "fixes": [], "touched": set(), "changed": False,
+        "conflicts": [], "fixes": [], "touched": set(), "changed": False, "stale": [], "usmax": 0,
     }
 
     def bump() -> int:
@@ -114,6 +114,8 @@ def apply_batch(d: dict, incoming: list, device: str, now: int) -> dict:
         br = r.pop("br")
         # устройство определяет сервер по запросу, значению dv из записи верить нельзя
         r["dv"] = device
+        if device and r.get("us") is not None:
+            res["usmax"] = max(res["usmax"], r["us"])
         if r["u"] > now + MAX_CLOCK_SKEW_MS:  # часы устройства спешат
             r["u"] = now
             res["clock"] += 1
@@ -126,8 +128,13 @@ def apply_batch(d: dict, incoming: list, device: str, now: int) -> dict:
         elif r["dv"] and r["dv"] == cur.get("dv") and r.get("us") is not None and cur.get("us") is not None:
             # то же устройство: порядок по счётчику, а не по часам
             accept = r["us"] > cur["us"]
+            if not accept and br is not None and br >= cur["r"]:
+                accept = True   # счётчик откатился (сбой, восстановление), но устройство видело текущую версию: правка новее
+                r["us"] = cur["us"]   # хранимый номер не уменьшаем, иначе старые повторы с большими номерами пройдут
             if accept:
                 r["u"] = max(r["u"], cur["u"] + 1)
+            else:
+                res["stale"].append(rid)   # похоже на повтор старого запроса; клиенту сообщим, чтобы он не потерял правку
         elif br is not None and br >= cur["r"]:
             # устройство видело актуальную версию: это обычная правка поверх неё
             accept = True

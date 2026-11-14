@@ -61,8 +61,13 @@ class SyncView(HomeAssistantView):
                 out[rid] = recs[rid]
         out = list(out.values())
 
+        ushi = 0
         if device:
-            d["devices"][device] = {"last": now, "label": label or d["devices"].get(device, {}).get("label", "")}
+            old = d["devices"].get(device, {})
+            ushi = max(int(old.get("us") or 0), res["usmax"])
+            if res["stale"]:   # счётчик устройства откатился: сверяемся с тем, что уже записано на сервере
+                ushi = max([ushi] + [r.get("us") or 0 for r in recs.values() if r.get("dv") == device])
+            d["devices"][device] = {"last": now, "label": label or old.get("label", ""), "us": ushi}
         interesting = res["sent"] or out or res["fixes"]
         if interesting:
             d["log"].append({
@@ -78,7 +83,7 @@ class SyncView(HomeAssistantView):
         return self.json({
             "rev": cursor, "head": d["rev"], "more": more, "rest": rest, "version": st["version"], "records": out,
             "conflicts": res["conflicts"], "nconf": len(d["conflicts"]), "fixes": len(res["fixes"]),
-            "fixlist": res["fixes"][:20],
+            "fixlist": res["fixes"][:20], "stale": res["stale"], "ushi": ushi,
         })
 
 

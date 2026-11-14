@@ -646,9 +646,21 @@
     function dbPut(store, key, val) { if (!DB) return; try { DB.transaction(store, 'readwrite').objectStore(store).put(val, key); } catch (e) {} }
     function dbDel(store, key) { if (!DB) return; try { DB.transaction(store, 'readwrite').objectStore(store).delete(key); } catch (e) {} }
     function persist(now) { clearTimeout(persistT); persistT = setTimeout(doPersist, now ? 0 : 250); }
-    function doPersist() {
+    function stateObj() {
+      return { recs: recs, dirty: Object.keys(dirty), upq: upq, delq: delq, since: since, device: device, useq: useq, nconf: nconf, synced: everSynced, dsince: dsince };
+    }
+    function doPersist() { clearTimeout(persistT); dbPut('kv', 'state', stateObj()); }
+    /* Запись состояния с ожиданием подтверждения от базы: счётчик правок useq должен быть на диске ДО запроса,
+       иначе после сбоя он откатится назад, а сервер уже мог принять правки с большими номерами. */
+    function persistWait() {
       clearTimeout(persistT);
-      dbPut('kv', 'state', { recs: recs, dirty: Object.keys(dirty), upq: upq, delq: delq, since: since, device: device, useq: useq, nconf: nconf, synced: everSynced, dsince: dsince });
+      return new Promise(function (res) {
+        if (!DB) { res(); return; }
+        try {
+          var tx = DB.transaction('kv', 'readwrite'); tx.objectStore('kv').put(stateObj(), 'state');
+          tx.oncomplete = function () { res(); }; tx.onerror = tx.onabort = function () { res(); };
+        } catch (e) { res(); }
+      });
     }
 
     /* --- записи для синхронизации: каждая вещь, коробка, категория это отдельная запись с меткой времени --- */
@@ -724,8 +736,9 @@
        3. Чужая запись, локальной правки нет: сервер главный, берём его версию. Устаревшие ответы (ревизия меньше
           уже известной) пропускаем. */
     function sameRec(a, b) { return sig(a) === sig(b) && !!a.d === !!b.d; }
-    function applyRemote(list, sent) {
-      var changed = false;
+    function applyRemote(list, sent, stale) {
+      var changed = false, st = {};
+      (stale || []).forEach(function (id) { st[id] = 1; });
       list.forEach(function (r) {
         if (!r || !okId(r.id)) return;          // чужая запись с недопустимым id не принимается
         var nr = norm(r); r.p = nr.p; r.c = nr.c; r.tg = nr.tg; r.ph = nr.ph;   // и сервер не считаем безусловно доверенным
@@ -734,6 +747,9 @@
         function take() {
           if (!l || !sameRec(l, r)) changed = true;
           recs[r.id] = r; delete dirty[r.id];
+        }
+        if (st[r.id] && l) {                      // сервер счёл отправку устаревшей (счётчик откатился): правку не теряем,
+          if (!sameRec(l, r)) { l.br = rv; dirty[r.id] = 1; return; }   // пересылаем поверх текущей версии сервера с новым номером
         }
         if (sent && sent[r.id] != null && l) {
           if (sig(l) !== sent[r.id]) {           // правили во время запроса: локальная версия остаётся в очереди
@@ -787,15 +803,19 @@
           return x;
         });
         var prevSince = since;
-        return call('POST', '/api/korobki/sync', { since: since, records: list, device: device, label: deviceLabel() }).then(function (r) { return r.json(); }).then(function (j) {
-          var changed = applyRemote(j.records || [], sent);
+        return persistWait().then(function () {   // номера правок уже на диске, потом запрос
+          return call('POST', '/api/korobki/sync', { since: since, records: list, device: device, label: deviceLabel() });
+        }).then(function (r) { return r.json(); }).then(function (j) {
+          var uPrev = useq, stale = Array.isArray(j.stale) ? j.stale : [];
+          if (typeof j.ushi === 'number' && isFinite(j.ushi) && j.ushi > useq) useq = Math.floor(j.ushi);   // счётчик не отстаёт от сервера
+          var changed = applyRemote(j.records || [], sent, stale);
           since = j.rev; everSynced = true; nconf = j.nconf || 0;
           S.stale = !!(j.version && VERSION.indexOf('__') !== 0 && j.version !== VERSION);
           tot.nc += (j.conflicts || []).length; tot.fixes += j.fixes || 0;
           if (changed) { buildTree(); render(); }
           doPersist();
           var held2 = heldIds(), more = !!j.more, leftNow = Object.keys(dirty).filter(function (id) { return recs[id] && !held2[id]; }).length;
-          var progress = more ? since !== prevSince : leftNow < left;
+          var progress = more ? since !== prevSince : (leftNow < left || (stale.length > 0 && useq > uPrev));
           if ((more || leftNow > 0) && progress && ++steps < 200) {
             if (leftNow > 0 || more) { net = 'sync'; renderSync(); }
             return step();

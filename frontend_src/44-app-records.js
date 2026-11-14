@@ -71,8 +71,9 @@
        3. Чужая запись, локальной правки нет: сервер главный, берём его версию. Устаревшие ответы (ревизия меньше
           уже известной) пропускаем. */
     function sameRec(a, b) { return sig(a) === sig(b) && !!a.d === !!b.d; }
-    function applyRemote(list, sent) {
-      var changed = false;
+    function applyRemote(list, sent, stale) {
+      var changed = false, st = {};
+      (stale || []).forEach(function (id) { st[id] = 1; });
       list.forEach(function (r) {
         if (!r || !okId(r.id)) return;          // чужая запись с недопустимым id не принимается
         var nr = norm(r); r.p = nr.p; r.c = nr.c; r.tg = nr.tg; r.ph = nr.ph;   // и сервер не считаем безусловно доверенным
@@ -81,6 +82,9 @@
         function take() {
           if (!l || !sameRec(l, r)) changed = true;
           recs[r.id] = r; delete dirty[r.id];
+        }
+        if (st[r.id] && l) {                      // сервер счёл отправку устаревшей (счётчик откатился): правку не теряем,
+          if (!sameRec(l, r)) { l.br = rv; dirty[r.id] = 1; return; }   // пересылаем поверх текущей версии сервера с новым номером
         }
         if (sent && sent[r.id] != null && l) {
           if (sig(l) !== sent[r.id]) {           // правили во время запроса: локальная версия остаётся в очереди
