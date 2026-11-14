@@ -173,8 +173,10 @@
     '.cover { height: 104px; position: relative; display: grid; place-items: center; color: var(--a); background-color: color-mix(in srgb, var(--a) 18%, var(--card)); background-size: cover; background-position: center; }',
     '.cover svg { width: 40px; height: 40px; }',
     '.badge { position: absolute; right: 8px; top: 8px; min-width: 24px; padding: 1px 8px; border-radius: 12px; background: rgba(0, 0, 0, .55); color: #fff; font-size: 12px; font-weight: 600; text-align: center; }',
-    '.g .del { position: absolute; right: 8px; top: 8px; width: 38px; height: 38px; min-width: 0; padding: 0; background: var(--card); }',
+    '.g .del { position: absolute; right: 8px; top: 8px; z-index: 2; width: 38px; height: 38px; min-width: 0; padding: 0; background: var(--card); color: var(--muted); }',
     '.del svg, .cover .del svg { width: 16px; height: 16px; }',
+    /* иконка удаления на обложке без фото не получает цветного круга от правила обложки */
+    '.cover:not([style*="url"]) .del svg { width: 16px; height: 16px; padding: 0; border-radius: 0; background: none; box-shadow: none; color: inherit; }',
     '.gb { padding: 9px 11px 11px; }',
     '.gb .name { font-size: 15px; }',
     /* вложенные коробки: компактно, с цветной полосой */
