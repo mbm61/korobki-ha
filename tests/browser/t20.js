@@ -31,7 +31,7 @@ const until=async(f,ms=20000)=>{const t0=Date.now(); while(Date.now()-t0<ms){ tr
  // вторая коробка БЕЗ фото в том же месте: должна уйти
  await p.click('[data-toggle-add]'); await p.locator('#addForm input#fName').fill('Коробка-без-фото'); await p.locator('#addForm button[type=submit]').click(); await until(()=>Object.values(srv.recs).some(r=>r.n==='Коробка-без-фото'));
  const names=()=>Object.values(srv.recs).map(r=>r.n);
- const rec=()=>Object.values(srv.recs).find(r=>r.n==='Коробка-с-фото'); console.log('DIAG rec', JSON.stringify(rec()||null).slice(0,400), '| count', Object.keys(srv.recs).length);
+ const rec=()=>Object.values(srv.recs).find(r=>r.n==='Коробка-с-фото'); await until(()=>!!rec());
  console.log('A. 400 на фото: запись на сервере БЕЗ ссылки на фото:', !!rec() && (rec().ph||[]).length===0, '| коробка без фото ушла:', names().includes('Коробка-без-фото'));
  console.log('LOG', JSON.stringify(log)); console.log('A. журнал:', log.filter(x=>/PUT/.test(x)).length>0 ? 'были попытки PUT' : 'нет PUT', '| в журнале нет DELETE:', !log.some(x=>/DELETE/.test(x)));
  // сервер починился: ручная синхронизация
