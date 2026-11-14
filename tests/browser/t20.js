@@ -17,6 +17,7 @@ const server=http.createServer((req,res)=>{ const u=req.url.split('?')[0];
 (async()=>{ await new Promise(r=>server.listen(0,r)); const base='http://localhost:'+server.address().port+'/korobki_app/index.html';
  const b=await chromium.launch(); const ctx=await b.newContext({viewport:{width:440,height:956},hasTouch:true,isMobile:true});
  const p=await ctx.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
+const until=async(f,ms=20000)=>{const t0=Date.now(); while(Date.now()-t0<ms){ try{ if(await f()) return true; }catch(e){} await p.waitForTimeout(200);} return false; };
  await p.addInitScript(()=>{try{localStorage.setItem('korobki-token','t')}catch(e){}});
  const sh=(s)=>p.evaluate(`(()=>{const r=document.querySelector('korobki-panel').shadowRoot;${s}})()`);
  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAFUlEQVR42mP8z8BQz0AEYBxVSF+FABJADveWkH6oAAAAAElFTkSuQmCC','base64');
@@ -28,7 +29,7 @@ const server=http.createServer((req,res)=>{ const u=req.url.split('?')[0];
  const [fc]=await Promise.all([p.waitForEvent('filechooser'),p.click('[data-addphoto="__new"]')]); await fc.setFiles({name:'a.png',mimeType:'image/png',buffer:png}); await p.waitForTimeout(500);
  await p.locator('#addForm button[type=submit]').click(); await p.waitForTimeout(3500);
  // вторая коробка БЕЗ фото в том же месте: должна уйти
- await p.click('[data-toggle-add]'); await p.locator('#addForm input#fName').fill('Коробка-без-фото'); await p.locator('#addForm button[type=submit]').click(); await p.waitForTimeout(3500);
+ await p.click('[data-toggle-add]'); await p.locator('#addForm input#fName').fill('Коробка-без-фото'); await p.locator('#addForm button[type=submit]').click(); await until(()=>Object.values(srv.recs).some(r=>r.n==='Коробка-без-фото'));
  const names=()=>Object.values(srv.recs).map(r=>r.n);
  const rec=()=>Object.values(srv.recs).find(r=>r.n==='Коробка-с-фото'); console.log('A. 400 на фото: запись на сервере БЕЗ ссылки на фото:', !!rec() && (rec().ph||[]).length===0, '| коробка без фото ушла:', names().includes('Коробка-без-фото'));
  console.log('LOG', JSON.stringify(log)); console.log('A. журнал:', log.filter(x=>/PUT/.test(x)).length>0 ? 'были попытки PUT' : 'нет PUT', '| в журнале нет DELETE:', !log.some(x=>/DELETE/.test(x)));

@@ -20,14 +20,15 @@ const server=http.createServer((req,res)=>{ const u=req.url.split('?')[0];
 (async()=>{ await new Promise(r=>server.listen(0,r)); const base='http://localhost:'+server.address().port+'/korobki_app/index.html';
  const b=await chromium.launch(); const ctx=await b.newContext({viewport:{width:440,height:956},hasTouch:true,isMobile:true});
  const p=await ctx.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message)); p.on('dialog',d=>{errs.push('dialog '+d.message());d.dismiss();});
+const until=async(f,ms=20000)=>{const t0=Date.now(); while(Date.now()-t0<ms){ try{ if(await f()) return true; }catch(e){} await p.waitForTimeout(200);} return false; };
  await p.addInitScript(()=>{try{localStorage.setItem('korobki-token','t')}catch(e){}});
  const sh=(s)=>p.evaluate(`(()=>{const r=document.querySelector('korobki-panel').shadowRoot;${s}})()`);
  const html=()=>sh("return r.innerHTML");
- await p.goto(base); await p.waitForTimeout(2000);
+ await p.goto(base); await until(()=>p.evaluate(()=>!!document.querySelector('korobki-panel')&&/Гараж/.test(document.querySelector('korobki-panel').shadowRoot.innerHTML)));
  let h=await html(); console.log('home rendered:', /Гараж/.test(h), '| id-attack dropped:', !/id-атака/.test(h), '| name escaped:', /&lt;img src=x onerror/.test(h) && !/<img src=x/.test(h));
  console.log('bad color not in style:', !/red;\\}/.test(h) && !/javascript:window/.test(h));
  await sh("r.querySelector('[data-open=\"p1\"]').click()"); await p.waitForTimeout(500);
- await sh("r.querySelector('[data-open=\"b1\"]').click()"); await p.waitForTimeout(500); h=await html();
+ await sh("r.querySelector('[data-open=\"b1\"]').click()"); await until(()=>p.evaluate(()=>/Дрель/.test(document.querySelector('korobki-panel').shadowRoot.innerHTML))); h=await html();
  console.log('box opened, item name escaped:', /Дрель &lt;script&gt;/.test(h) && !/<script>window/.test(h), '| bad tag dropped:', !/onerror=window.__x=4/.test(h.replace(/&lt;[^>]*/g,'')));
  // импорт опасного файла
  const bad={app:'korobki',format:1,recs:{root:evil[0],p1:evil[1],'x" y':{...evil[2],id:'x" y'},p3:mk('p3','place','root','цвет',{c:'url(javascript:1)'}),p4:mk('p4','place','root','ok',{c:'#00FF00'})}};
