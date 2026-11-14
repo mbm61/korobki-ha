@@ -69,7 +69,7 @@
       } else if (sh.type === 'viewer') {
         var ids = n.ph || [], i = Math.min(Math.max(0, sh.idx), ids.length - 1), pid = ids[i];
         var src = photoUrl(pid, true) || photoUrl(pid);
-        h += head(esc(n.n)) + '<div class="viewer">' + (src ? '<img alt="Фото ' + (i + 1) + '" src="' + src + '">' : '<div class="empty">Загружаю фото…</div>') +
+        h += head(esc(n.n)) + '<div class="viewer">' + (src ? '<img alt="Фото ' + (i + 1) + '" src="' + esc(src) + '">' : '<div class="empty">Загружаю фото…</div>') +
           '<div class="vnav"><button class="btn" data-nav="-1"' + (i === 0 ? ' disabled' : '') + ' aria-label="Предыдущее">←</button>' +
           '<span class="hint">' + (i + 1) + ' из ' + ids.length + '</span>' +
           '<button class="btn" data-nav="1"' + (i >= ids.length - 1 ? ' disabled' : '') + ' aria-label="Следующее">→</button></div>' +

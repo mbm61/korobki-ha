@@ -778,7 +778,7 @@
     function pushPull() {
       var tot = { nc: 0, fixes: 0 }, steps = 0;
       function step() {
-        var ids = Object.keys(dirty).filter(function (id) { return recs[id]; }), sent = {};
+        var held = heldIds(), ids = Object.keys(dirty).filter(function (id) { return recs[id] && !held[id]; }), sent = {};
         var left = ids.length;
         var list = ids.slice(0, BATCH).map(function (id) {
           var x = Object.assign({}, recs[id]);
@@ -794,7 +794,7 @@
           tot.nc += (j.conflicts || []).length; tot.fixes += j.fixes || 0;
           if (changed) { buildTree(); render(); }
           doPersist();
-          var more = !!j.more, leftNow = Object.keys(dirty).filter(function (id) { return recs[id]; }).length;
+          var held2 = heldIds(), more = !!j.more, leftNow = Object.keys(dirty).filter(function (id) { return recs[id] && !held2[id]; }).length;
           var progress = more ? since !== prevSince : leftNow < left;
           if ((more || leftNow > 0) && progress && ++steps < 200) {
             if (leftNow > 0 || more) { net = 'sync'; renderSync(); }
@@ -807,34 +807,72 @@
         else if (tot.fixes) toast('Сервер поправил структуру: записей ' + tot.fixes + '. Подробности в журнале.');
       });
     }
-    function uploadPhotos() {
+    /* Фото: сначала загружаем файлы, потом отправляем записи (но не те, что ссылаются на ещё не загруженное фото),
+       и только после успешной отправки всех записей удаляем ненужные файлы с сервера. */
+    var upFail = {};                              // фото, которое сервер отверг (4xx): id -> {code, t}; остаётся в очереди
+    function stripPhotoRef(pid) {                 // запись ссылается на фото, которого нет ни на устройстве, ни на сервере
+      Object.keys(recs).forEach(function (id) {
+        var r = recs[id];
+        if ((r.ph || []).indexOf(pid) < 0) return;
+        r.ph = r.ph.filter(function (x) { return x !== pid; }); r.u = Math.max(Date.now(), r.u + 1); dirty[id] = 1;
+      });
+    }
+    function uploadPhotos(force) {
       return upq.slice().reduce(function (p, id) {
         return p.then(function () {
+          if (!force && upFail[id] && Date.now() - upFail[id].t < 60000) return null;   // не долбим сервер каждую секунду
           return new Promise(function (res) { dbGet('photos', id, res); }).then(function (rec) {
-            if (!rec || !rec.full) { upq = upq.filter(function (x) { return x !== id; }); return null; }
+            if (!rec || !rec.full) {
+              // файла на устройстве нет: если и на сервере его нет, ссылку убираем (не оставляем «битое» фото)
+              return call('GET', '/api/korobki/photo/' + id + '/thumb').then(function (r) {
+                if (r.status === 404) stripPhotoRef(id);
+                upq = upq.filter(function (x) { return x !== id; }); doPersist();
+              });
+            }
             return call('PUT', '/api/korobki/photo/' + id, abToBlob(rec.full), 'image/jpeg')
               .then(function () { return rec.thumb ? call('PUT', '/api/korobki/photo/' + id + '/thumb', abToBlob(rec.thumb), 'image/jpeg') : null; })
-              .then(function () { upq = upq.filter(function (x) { return x !== id; }); rec.up = 1; dbPut('photos', id, rec); doPersist(); }, function (e) {
-                if (e && e.http && e.http < 500) { upq = upq.filter(function (x) { return x !== id; }); return null; }
+              .then(function () { delete upFail[id]; upq = upq.filter(function (x) { return x !== id; }); rec.up = 1; dbPut('photos', id, rec); doPersist(); }, function (e) {
+                if (e && e.http && e.http < 500) { upFail[id] = { code: e.http, t: Date.now() }; return null; }   // 4xx: фото остаётся в очереди
                 throw e;
               });
           });
         });
       }, Promise.resolve());
     }
+    function photoRefd(pid) {
+      return Object.keys(recs).some(function (id) { return (recs[id].ph || []).indexOf(pid) > -1; });
+    }
     function deletePhotos() {
+      if (Object.keys(dirty).length) return Promise.resolve();   // на сервере ещё могут быть записи со ссылкой: удалим позже
       return delq.slice().reduce(function (p, id) {
         return p.then(function () {
+          if (photoRefd(id)) { delq = delq.filter(function (x) { return x !== id; }); doPersist(); return null; }   // фото снова нужно
           return call('DELETE', '/api/korobki/photo/' + id).then(function () { delq = delq.filter(function (x) { return x !== id; }); doPersist(); });
         });
       }, Promise.resolve());
     }
-    function sync() {
+    /* записи, которые пока нельзя отправлять: ссылаются на не загруженное фото, и всё их потомство (иначе на сервере
+       потомки окажутся без родителя) */
+    function heldIds() {
+      var pend = {}, held = {}, any = false;
+      upq.forEach(function (x) { pend[x] = 1; });
+      Object.keys(dirty).forEach(function (id) {
+        var r = recs[id]; if (r && (r.ph || []).some(function (x) { return pend[x]; })) { held[id] = 1; any = true; }
+      });
+      if (!any) return held;
+      var out = {};
+      Object.keys(dirty).forEach(function (id) {
+        for (var cur = recs[id], n = 0; cur && n < 60; cur = recs[cur.p], n++) if (held[cur.id]) { out[id] = 1; break; }
+      });
+      return out;
+    }
+    function sync(manual) {
       if (destroyed || !booted) return Promise.resolve();
       if (syncing) { again = true; return syncing; }
+      var manualSync = manual === true;
       var was = everSynced;
       net = 'sync'; renderSync();
-      syncing = uploadPhotos().then(deletePhotos).then(pushPull).then(function () {
+      syncing = uploadPhotos(manualSync).then(pushPull).then(deletePhotos).then(function () {
         net = 'ok'; lastSync = Date.now(); if (!pendingCount()) dsince = 0; retryPhotos(); prefetchThumbs(); gcLocalPhotos();
       }).catch(function (e) {
         net = e && e.auth ? 'auth' : 'offline';
@@ -1352,6 +1390,8 @@
       h += '<div class="sec">Резервная копия</div><div class="hint">Файл со всеми местами, коробками, вещами и категориями. «С фото» файл больше. Фото, которых нет на устройстве, берутся с сервера.</div>' +
         '<div class="actions"><button class="btn" data-export="0"' + (v.busy ? ' disabled' : '') + '>Скачать копию</button><button class="btn" data-export="1"' + (v.busy ? ' disabled' : '') + '>Копия с фото</button></div>';
       if (v.exp) h += '<div class="svcrow"><div class="hint">Готово: ' + esc(v.exp.name) + ', ' + mb(v.exp.size) + (v.exp.missing ? '. Без фото: ' + v.exp.missing + ' (не нашлись)' : '') + '</div><button class="btn primary" data-saveexp>Сохранить файл</button></div>';
+      var ufk = Object.keys(upFail);
+      if (ufk.length) h += '<div class="warn2">Сервер не принял фото: ' + ufk.length + ' (код ' + esc(ufk.map(function (k2) { return upFail[k2].code; }).filter(function (x, i, a) { return a.indexOf(x) === i; }).join(', ')) + '). Записи с этими фото пока не отправляются, остальное синхронизируется. Фото остаются в очереди: откройте запись и замените фото, затем «Синхронизировать».</div>';
       /* Диагностика экрана: помогает разобраться с полосой внизу на iPhone */
       var vv = window.visualViewport, pr = document.createElement('div'), cs = '';
       try { pr.style.cssText = 'position:fixed;left:0;top:0;width:0;padding-bottom:env(safe-area-inset-bottom,0px);visibility:hidden'; document.body.appendChild(pr); cs = pr.offsetHeight; document.body.removeChild(pr); } catch (e) {}
@@ -1682,7 +1722,7 @@
       } else if (sh.type === 'viewer') {
         var ids = n.ph || [], i = Math.min(Math.max(0, sh.idx), ids.length - 1), pid = ids[i];
         var src = photoUrl(pid, true) || photoUrl(pid);
-        h += head(esc(n.n)) + '<div class="viewer">' + (src ? '<img alt="Фото ' + (i + 1) + '" src="' + src + '">' : '<div class="empty">Загружаю фото…</div>') +
+        h += head(esc(n.n)) + '<div class="viewer">' + (src ? '<img alt="Фото ' + (i + 1) + '" src="' + esc(src) + '">' : '<div class="empty">Загружаю фото…</div>') +
           '<div class="vnav"><button class="btn" data-nav="-1"' + (i === 0 ? ' disabled' : '') + ' aria-label="Предыдущее">←</button>' +
           '<span class="hint">' + (i + 1) + ' из ' + ids.length + '</span>' +
           '<button class="btn" data-nav="1"' + (i >= ids.length - 1 ? ' disabled' : '') + ' aria-label="Следующее">→</button></div>' +
@@ -1877,7 +1917,7 @@
         if (cn) { if (cv) cn.c = cv; else delete cn.c; save(); render(); }
         return;
       }
-      if (q('[data-sync]')) { sync(); return; }
+      if (q('[data-sync]')) { sync(true); return; }
       if (q('#netBtn')) {
         toast(netInfo.msg);
         if (netInfo.act === 'sync') sync(); else if (netInfo.act === 'reauth') env.reauth(); else if (netInfo.act === 'reload') location.reload(); else if (netInfo.act === 'svc') { S.sheet = { type: 'svc', id: 'root', back: null }; S.conf = null; render(); loadSvc(); }

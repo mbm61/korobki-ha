@@ -112,8 +112,8 @@ def apply_batch(d: dict, incoming: list, device: str, now: int) -> dict:
         rid = r["id"]
         res["touched"].add(rid)
         br = r.pop("br")
-        if not r["dv"]:
-            r["dv"] = device
+        # устройство определяет сервер по запросу, значению dv из записи верить нельзя
+        r["dv"] = device
         if r["u"] > now + MAX_CLOCK_SKEW_MS:  # часы устройства спешат
             r["u"] = now
             res["clock"] += 1

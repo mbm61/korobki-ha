@@ -74,6 +74,8 @@
       h += '<div class="sec">Резервная копия</div><div class="hint">Файл со всеми местами, коробками, вещами и категориями. «С фото» файл больше. Фото, которых нет на устройстве, берутся с сервера.</div>' +
         '<div class="actions"><button class="btn" data-export="0"' + (v.busy ? ' disabled' : '') + '>Скачать копию</button><button class="btn" data-export="1"' + (v.busy ? ' disabled' : '') + '>Копия с фото</button></div>';
       if (v.exp) h += '<div class="svcrow"><div class="hint">Готово: ' + esc(v.exp.name) + ', ' + mb(v.exp.size) + (v.exp.missing ? '. Без фото: ' + v.exp.missing + ' (не нашлись)' : '') + '</div><button class="btn primary" data-saveexp>Сохранить файл</button></div>';
+      var ufk = Object.keys(upFail);
+      if (ufk.length) h += '<div class="warn2">Сервер не принял фото: ' + ufk.length + ' (код ' + esc(ufk.map(function (k2) { return upFail[k2].code; }).filter(function (x, i, a) { return a.indexOf(x) === i; }).join(', ')) + '). Записи с этими фото пока не отправляются, остальное синхронизируется. Фото остаются в очереди: откройте запись и замените фото, затем «Синхронизировать».</div>';
       /* Диагностика экрана: помогает разобраться с полосой внизу на iPhone */
       var vv = window.visualViewport, pr = document.createElement('div'), cs = '';
       try { pr.style.cssText = 'position:fixed;left:0;top:0;width:0;padding-bottom:env(safe-area-inset-bottom,0px);visibility:hidden'; document.body.appendChild(pr); cs = pr.offsetHeight; document.body.removeChild(pr); } catch (e) {}

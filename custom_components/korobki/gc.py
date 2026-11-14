@@ -28,9 +28,18 @@ def compact(d: dict) -> bool:
     return changed
 
 
-def photo_stats(photo_dir: Path, recs: dict, min_age: float, delete: bool) -> dict:
-    """Считает фото, на которые нет ссылок ни в одной записи (включая корзину). По флагу удаляет их."""
-    used = {pid for r in recs.values() for pid in (r.get("ph") or [])}
+def used_photos(recs: dict) -> frozenset:
+    """Снимок ссылок на фото. Вызывается только в потоке событий HA, где записи не меняются на ходу."""
+    return frozenset(pid for r in list(recs.values()) for pid in (r.get("ph") or []))
+
+
+def photo_stats(photo_dir: Path, used, min_age: float, delete: bool) -> dict:
+    """Считает фото, на которые нет ссылок ни в одной записи (включая корзину). По флагу удаляет их.
+
+    Работает в потоке-исполнителе, поэтому получает неизменяемый снимок `used`, а не живые записи.
+    """
+    if isinstance(used, dict):  # совместимость: словарь записей превращаем в снимок
+        used = used_photos(used)
     now = time.time()
     photos = total = orphans = orphan_bytes = removed = freed = 0
     seen: set[str] = set()
@@ -66,7 +75,7 @@ async def run_gc(hass: HomeAssistant, min_age: float) -> dict:
     d = st["data"]
     if compact(d):
         st["store"].async_delay_save(lambda: d, 1)
-    return await hass.async_add_executor_job(photo_stats, st["photo_dir"], d["recs"], min_age, True)
+    return await hass.async_add_executor_job(photo_stats, st["photo_dir"], used_photos(d["recs"]), min_age, True)
 
 
 async def async_setup_gc(hass: HomeAssistant) -> None:
@@ -93,7 +102,7 @@ class StatsView(HomeAssistantView):
     async def get(self, request: web.Request) -> web.Response:
         st = self._hass.data[DOMAIN]
         res = await self._hass.async_add_executor_job(
-            photo_stats, st["photo_dir"], st["data"]["recs"], ORPHAN_MANUAL_AGE, False
+            photo_stats, st["photo_dir"], used_photos(st["data"]["recs"]), ORPHAN_MANUAL_AGE, False
         )
         return self.json(res)
 

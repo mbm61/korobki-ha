@@ -1,0 +1,33 @@
+const { chromium } = require('playwright'); const { spawn } = require('child_process');
+const PORT = 8765; const srv = spawn('python3', ['mockserver.py', String(PORT)], { cwd: __dirname, stdio: 'inherit' });
+(async () => { await new Promise(r => setTimeout(r, 800));
+ const base = `http://127.0.0.1:${PORT}/korobki_app/index.html`; const b = await chromium.launch();
+ const mk = async (ua) => { const ctx = await b.newContext({ viewport: { width: 440, height: 956 }, hasTouch: true, isMobile: true, userAgent: ua }); const p = await ctx.newPage(); p.errs = []; p.on('pageerror', e => p.errs.push(e.message));
+   await p.addInitScript(() => { try { localStorage.setItem('korobki-token', 't') } catch (e) {} }); await p.goto(base); await p.waitForTimeout(1200); p.ctx = ctx;
+   p.sh = (s) => p.evaluate(`(()=>{const r=document.querySelector('korobki-panel').shadowRoot;${s}})()`); return p; };
+ const A = await mk('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)'), B = await mk('Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
+ await A.click('[data-seed]'); await A.waitForTimeout(2500);
+ await B.sh("r.querySelector('#netBtn').click()"); await B.waitForTimeout(1500);
+ const openItem = async (p) => { await p.click('.g >> nth=0'); await p.click('.g >> nth=0'); await p.waitForTimeout(300); await p.locator('.rmain >> nth=0').click(); await p.waitForTimeout(300); };
+ await openItem(A); await openItem(B);
+ // обе стороны уходят в офлайн и правят одну вещь
+ await A.ctx.setOffline(true); await B.ctx.setOffline(true);
+ await A.locator('#sName').fill('Правка с айфона'); await A.keyboard.press('Tab'); await A.waitForTimeout(400);
+ await B.waitForTimeout(1200);
+ await B.locator('#sName').fill('Правка с компьютера'); await B.keyboard.press('Tab'); await B.waitForTimeout(400);
+ // сначала на связь выходит компьютер, потом айфон
+ await B.ctx.setOffline(false); await B.sh("r.querySelector('#netBtn').click()"); await B.waitForTimeout(1800);
+ await A.ctx.setOffline(false); await A.sh("r.querySelector('#netBtn').click()"); await A.waitForTimeout(2200);
+ const st = await (await fetch(`http://127.0.0.1:${PORT}/__state`)).json();
+ console.log('server name:', Object.values(st.recs).filter(r => r.n.startsWith('Правка'))[0].n, '| nconf:', st.nconf);
+ console.log('iPhone net icon label:', await A.sh("return r.getElementById('netBtn').getAttribute('aria-label')"), '| color:', await A.sh("return getComputedStyle(r.getElementById('netBtn')).color"));
+ await A.keyboard.press('Escape'); await A.waitForTimeout(200);
+ await A.sh("r.querySelector('#netBtn').click()"); await A.waitForTimeout(800);
+ console.log('service sheet opened from icon:', await A.sh("return !!r.querySelector('.panel .cbox')"));
+ console.log('conflict text:', await A.sh("return r.querySelector('.cbox').innerText.replace(/\\n+/g,' | ')"));
+ console.log('log rows:', await A.sh("return [...r.querySelectorAll('.logrow')].slice(0,3).map(x=>x.innerText).join(' || ')"));
+ await A.screenshot({ path: require('os').tmpdir()+'/'+'s16_conflict.png' });
+ await A.click('[data-cres]'); await A.waitForTimeout(2500);
+ const st2 = await (await fetch(`http://127.0.0.1:${PORT}/__state`)).json();
+ console.log('after restore -> server name:', Object.values(st2.recs).filter(r => r.n.startsWith('Правка'))[0].n, '| nconf:', st2.nconf);
+ console.log('errors', JSON.stringify(A.errs.concat(B.errs))); await b.close(); srv.kill(); process.exit(0); })();

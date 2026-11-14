@@ -33,7 +33,7 @@
         if (cn) { if (cv) cn.c = cv; else delete cn.c; save(); render(); }
         return;
       }
-      if (q('[data-sync]')) { sync(); return; }
+      if (q('[data-sync]')) { sync(true); return; }
       if (q('#netBtn')) {
         toast(netInfo.msg);
         if (netInfo.act === 'sync') sync(); else if (netInfo.act === 'reauth') env.reauth(); else if (netInfo.act === 'reload') location.reload(); else if (netInfo.act === 'svc') { S.sheet = { type: 'svc', id: 'root', back: null }; S.conf = null; render(); loadSvc(); }
